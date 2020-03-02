@@ -51,7 +51,7 @@ First ensure you are in a new and empty directory.
     yarn migrate
     ```
 
-5. Run the unit tests (the `yarn test` also migrates)
+5. Run the unit tests (the `yarn test` also migrates). The unit test is more of an integration tests that burns tokens and verifies the leader and operators busines logic.
     ```
     yarn test
     ```
