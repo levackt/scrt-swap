@@ -3,6 +3,28 @@
 This set of tools provides a reasonably secure mechanism for burning ENG on Ethereum, and minting
 SCRT 1-to-1 on the Enigma chain. 
 
+## Work in Progress
+
+Development tasks:
+
+- [x] Smart contract that burns ENG
+- [x] Leader that watches Ethereum, and unsigned tx to the db (mocked tx)
+- [x] Operator watches Ethereum and sign the tx (mocked sig)
+- [ ] Leader ratifies the tx and submits to enigma cli
+- [ ] Integrate enigmacli into the operator and learder (real tx and sig)
+- [x] Frontend React template integrate with Web and the smart contract
+- [ ] Burn ENG form in frontend
+- [x] End-to-end integration test
+- [ ] Stress test and dry run
+- [ ] Minter module that authenticates the multisig address (is this needed?)
+
+Operational tasks:
+
+- [ ] Vote on operators and leader
+- [ ] Do we need a Minter module or are coins pre-mined?
+- [ ] Operators configure their private key in their enigmad
+- [ ] Leader creates the multigig address and imports operators public keys in enigmad
+
 This repo contains the implementation for the [Multisig Setup Proposal](https://hackmd.io/AY1XxpRsQey1E-qB3iSyVg)
 
 ## Installation
