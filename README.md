@@ -16,12 +16,12 @@ Development tasks:
 - [ ] Burn ENG form in frontend
 - [x] End-to-end integration test
 - [ ] Stress test and dry run
-- [ ] Minter module that authenticates the multisig address (is this needed?)
+- [x] Minter module that authenticates the multisig address (is this needed?)
 
 Operational tasks:
 
 - [ ] Vote on operators and leader
-- [ ] Do we need a Minter module or are coins pre-mined?
+- [x] Do we need a Minter module or are coins pre-mined?
 - [ ] Operators configure their private key in their enigmad
 - [ ] Leader creates the multigig address and imports operators public keys in enigmad
 
