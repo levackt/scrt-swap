@@ -59,8 +59,6 @@ class App extends Component {
         deployedNetwork && contractAddress
       );
 
-      // Call balanceOf function
-
       let tokenAddress = null;
 
       await instance.methods
@@ -133,8 +131,6 @@ class App extends Component {
     }
 
     const weiAmount = web3.utils.toWei(engToSwap, "ether");
-
-    debugger;
 
     const approveTx = await tokenContract.methods
       .approve(contractAddress, weiAmount)
