@@ -2,11 +2,11 @@ import React, { Component } from "react";
 import EngSwapContract from "./contracts/EngSwap.json";
 import tokenContract from "./contracts/ERC20.json";
 import getWeb3 from "./getWeb3";
-import Button from "@material-ui/core/Button";
-import InputLabel from "@material-ui/core/InputLabel";
-import TextField from "@material-ui/core/TextField";
-
+import {Button, InputLabel, TextField} from "@material-ui/core"
+import { Alert } from '@material-ui/lab';
 import "./App.css";
+
+const cosmos = require('cosmos-lib');
 
 class App extends Component {
   constructor(props) {
@@ -15,7 +15,9 @@ class App extends Component {
     this.state = {
       engBalance: null,
       engToSwap: null,
+      engToSwapError: null,
       scrtAddress: null,
+      scrtAddressError: null,
       web3: null,
       accounts: null,
       contract: null,
@@ -29,19 +31,35 @@ class App extends Component {
   }
 
   handleAmountChange(event) {
-    this.setState({ engToSwap: event.target.value });
+    if (isNaN(parseFloat(event.target.value)) || parseFloat(event.target.value) <= 0) {
+      this.setState({ engToSwapError: "Invalid swap amount" });
+    } else if (parseFloat(event.target.value) > parseFloat(this.state.engBalance)) {
+      this.setState({ engToSwapError: `Cannot exceed ${this.state.engBalance} ENG` });
+    } else {
+      this.setState({ 
+        engToSwapError: null,
+        engToSwap: event.target.value 
+      });
+    }
   }
 
   handleScrtAddressChange(event) {
-    this.setState({ scrtAddress: event.target.value });
+    const newAddress = event.target.value;
+    try {
+      // checksum
+      const bytes32 = cosmos.address.getBytes32(newAddress, "enigma");
+      this.setState({ scrtAddress: event.target.value });
+      this.setState({ scrtAddressBytes: bytes32.toString('hex')});
+    } catch(error) {
+      this.setState({ scrtAddressError: error.message});
+    }
   }
 
   handleSubmit(event) {
-    debugger;
     this.initiateSwap();
-
     event.preventDefault();
   }
+
   componentDidMount = async () => {
     try {
       // Get network provider and web3 instance.
@@ -81,7 +99,7 @@ class App extends Component {
           contractAddress: contractAddress,
           tokenContract: tokenInstance
         },
-        this.swapDetails
+        this.engBalance
       );
     } catch (error) {
       // Catch any errors for any of the above operations.
@@ -92,7 +110,7 @@ class App extends Component {
     }
   };
 
-  swapDetails = async () => {
+  engBalance = async () => {
     const { web3, accounts, tokenContract } = this.state;
 
     await tokenContract.methods
@@ -103,15 +121,6 @@ class App extends Component {
           engBalance: web3.utils.fromWei(result, "ether")
         });
       });
-  };
-
-  canSwap = () => {
-    // todo form validation, then check if scrtAddress is valid
-
-    const { engToSwap, scrtAddress, web3 } = this.state;
-    return (
-      engToSwap && scrtAddress && web3.utils.toWei(engToSwap, "ether") !== "0"
-    );
   };
 
   initiateSwap = async () => {
@@ -125,22 +134,23 @@ class App extends Component {
       web3
     } = this.state;
 
-    if (!this.canSwap()) {
-      alert("invalid data");
-      return;
+    const swapAmount = web3.utils.toWei(engToSwap, "ether");
+
+    const allowance = await tokenContract.methods.allowance(accounts[0], contractAddress).call()
+    
+    // Check if current allowance is sufficient, else approve
+    if (parseFloat(allowance) < swapAmount) {
+      const approveTx = await tokenContract.methods
+            .approve(contractAddress, swapAmount)
+            .send({ from: accounts[0] });
+          if (!approveTx.status) {
+            alert("Failed to approve");
+            return;
+          }
     }
 
-    const weiAmount = web3.utils.toWei(engToSwap, "ether");
-
-    const approveTx = await tokenContract.methods
-      .approve(contractAddress, weiAmount)
-      .send({ from: accounts[0] });
-    if (!approveTx.status) {
-      alert("Failed to approve");
-      return;
-    }
     await contract.methods
-      .burnFunds(web3.utils.fromAscii(scrtAddress), weiAmount)
+      .burnFunds(web3.utils.fromAscii(scrtAddress), swapAmount)
       .send({
         from: accounts[0],
         gas: 1000000 // todo gas
@@ -175,6 +185,9 @@ class App extends Component {
               label="Amount to SWAP"
               onChange={this.handleAmountChange}
             />
+            {this.state.engToSwapError && (
+              <Alert severity="error">{this.state.engToSwapError}</Alert>
+            )}
             <InputLabel shrink>MAX : {this.state.engBalance}</InputLabel>
             <p></p>
             <TextField
@@ -183,6 +196,9 @@ class App extends Component {
               label="SCRT address"
               onChange={this.handleScrtAddressChange}
             />
+            {this.state.scrtAddressError && (
+              <Alert severity="error">{this.state.scrtAddressError}</Alert>
+            )}
             <InputLabel shrink>SCRT account on EnigmaChain</InputLabel>
             <p></p>
             <Button
