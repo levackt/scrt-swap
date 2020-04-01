@@ -2,62 +2,81 @@ import React, { Component } from "react";
 import EngSwapContract from "./contracts/EngSwap.json";
 import tokenContract from "./contracts/ERC20.json";
 import getWeb3 from "./getWeb3";
-import {Button, InputLabel, TextField} from "@material-ui/core"
-import { Alert } from '@material-ui/lab';
+import {Button, TextField} from "@material-ui/core"
 import "./App.css";
 
 const cosmos = require('cosmos-lib');
 
 class App extends Component {
+
   constructor(props) {
     super(props);
 
     this.state = {
       engBalance: null,
-      engToSwap: null,
-      engToSwapError: null,
-      scrtAddress: null,
-      scrtAddressError: null,
+      swapAmount: null,
+      recipientAddress: null,
       web3: null,
       accounts: null,
       contract: null,
       contractAddress: null,
-      tokenContract: null
+      tokenContract: null,
+      errors: {
+        swapAmount: '',
+        recipientAddress: '',
+      },
+      receipt: null
     };
-
-    this.handleAmountChange = this.handleAmountChange.bind(this);
-    this.handleScrtAddressChange = this.handleScrtAddressChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
   }
 
-  handleAmountChange(event) {
-    if (isNaN(parseFloat(event.target.value)) || parseFloat(event.target.value) <= 0) {
-      this.setState({ engToSwapError: "Invalid swap amount" });
-    } else if (parseFloat(event.target.value) > parseFloat(this.state.engBalance)) {
-      this.setState({ engToSwapError: `Cannot exceed ${this.state.engBalance} ENG` });
-    } else {
-      this.setState({ 
-        engToSwapError: null,
-        engToSwap: event.target.value 
-      });
-    }
-  }
-
-  handleScrtAddressChange(event) {
-    const newAddress = event.target.value;
-    try {
-      // checksum
-      const bytes32 = cosmos.address.getBytes32(newAddress, "enigma");
-      this.setState({ scrtAddress: event.target.value });
-      this.setState({ scrtAddressBytes: bytes32.toString('hex')});
-    } catch(error) {
-      this.setState({ scrtAddressError: error.message});
-    }
-  }
-
-  handleSubmit(event) {
-    this.initiateSwap();
+  handleChange = (event) => {
     event.preventDefault();
+    const { name, value } = event.target;
+    const {errors, web3, engBalance, accounts} = this.state;
+
+    switch (name) {
+      case 'swapAmount': 
+
+        errors.swapAmount = 
+          (value.length <= 0 || 
+          isNaN(value) || 
+          parseFloat(value) <= 0 ||
+          parseInt(web3.utils.toWei(value, 'ether')) > parseInt(engBalance))
+            ? `Invalid swap amount. ${accounts[0]} has ${web3.utils.fromWei(engBalance)} ENG`
+            : '';
+        break;
+      case 'recipientAddress': 
+        try {
+          // checksum
+          const bytes32 = cosmos.address.getBytes32(value, "enigma");
+          this.setState({ recipientAddress: value });
+          this.setState({ scrtAddressBytes: bytes32.toString('hex')});
+        } catch(error) {
+          errors.recipientAddress = error.message;
+        }
+        break;
+      default:
+        break;
+    }
+
+    this.setState({errors, [name]: value});
+  }
+
+  handleSubmit = (event) => {
+
+    event.preventDefault();
+
+    if(this.validateForm(this.state.errors)) {
+      this.initiateSwap();
+    }
+  }
+
+  validateForm = (errors) => {
+    let valid = true;
+    Object.values(errors).forEach(
+      (val) => val.length > 0 && (valid = false)
+    );
+    return valid;
   }
 
   componentDidMount = async () => {
@@ -118,30 +137,31 @@ class App extends Component {
       .call()
       .then(result => {
         this.setState({
-          engBalance: web3.utils.fromWei(result, "ether")
+          engBalance: result
         });
       });
   };
 
   initiateSwap = async () => {
+
     const {
       accounts,
-      engToSwap,
-      scrtAddress,
+      swapAmount,
+      recipientAddress,
       contract,
       tokenContract,
       contractAddress,
       web3
     } = this.state;
 
-    const swapAmount = web3.utils.toWei(engToSwap, "ether");
+    const swapAmountWei = web3.utils.toWei(swapAmount, "ether");
 
     const allowance = await tokenContract.methods.allowance(accounts[0], contractAddress).call()
     
     // Check if current allowance is sufficient, else approve
-    if (parseFloat(allowance) < swapAmount) {
+    if (parseInt(allowance) < parseInt(swapAmountWei)) {
       const approveTx = await tokenContract.methods
-            .approve(contractAddress, swapAmount)
+            .approve(contractAddress, swapAmountWei)
             .send({ from: accounts[0] });
           if (!approveTx.status) {
             alert("Failed to approve");
@@ -150,15 +170,17 @@ class App extends Component {
     }
 
     await contract.methods
-      .burnFunds(web3.utils.fromAscii(scrtAddress), swapAmount)
+      .burnFunds(web3.utils.fromAscii(recipientAddress), swapAmount)
       .send({
         from: accounts[0],
         gas: 1000000 // todo gas
       })
       .on("transactionHash", function(hash) {
-        console.log(`swap initiated, hash=${hash}`);
+        console.log(`Broadcasting tx hash=${hash}`);
       })
       .on("receipt", function(receipt) {
+        debugger
+        this.setState({receipt: receipt})
         console.log(
           `Got tx receipt. status=${receipt.status}, hash=${receipt.transactionHash}`
         );
@@ -172,44 +194,51 @@ class App extends Component {
   };
 
   render() {
+    const {errors, receipt} = this.state;
+
     if (!this.state.web3) {
       return <div>Loading Web3, accounts, and contract...</div>;
     }
     return (
       <div className="App">
         <div>
-          <form>
-            <TextField
-              required
-              id="amount"
-              label="Amount to SWAP"
-              onChange={this.handleAmountChange}
-            />
-            {this.state.engToSwapError && (
-              <Alert severity="error">{this.state.engToSwapError}</Alert>
-            )}
-            <InputLabel shrink>MAX : {this.state.engBalance}</InputLabel>
+          <form onSubmit={this.handleSubmit} noValidate>
+            <div>
+              <div>
+                <TextField
+                  required
+                  name="swapAmount"
+                  label="Amount to SWAP"
+                  onChange={this.handleChange}
+                />
+              </div>
+              <div>
+                {errors.swapAmount.length > 0 && 
+                <span className='error'>{errors.swapAmount}</span>}
+              </div>
+            </div>
             <p></p>
-            <TextField
-              required
-              id="scrtAddress"
-              label="SCRT address"
-              onChange={this.handleScrtAddressChange}
-            />
-            {this.state.scrtAddressError && (
-              <Alert severity="error">{this.state.scrtAddressError}</Alert>
-            )}
-            <InputLabel shrink>SCRT account on EnigmaChain</InputLabel>
+            <div>
+              <div>
+                <TextField
+                  required
+                  name="recipientAddress"
+                  label="SCRT address"
+                  onChange={this.handleChange}
+                />
+              </div>
+              <div>
+                {errors.recipientAddress.length > 0 && 
+                <span className='error'>{errors.recipientAddress}</span>}
+              </div>
+            </div>
             <p></p>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => {
-                this.initiateSwap();
-              }}
-            >
-              Initiate ENG to SCRT Swap
-            </Button>
+
+            <div className='submit'>
+              <div className='submit'>
+                <button>Start Swap</button>
+              </div>
+            </div>
           </form>
         </div>
       </div>
