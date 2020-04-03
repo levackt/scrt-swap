@@ -2,10 +2,12 @@ import React, { Component } from "react";
 import EngSwapContract from "./contracts/EngSwap.json";
 import tokenContract from "./contracts/ERC20.json";
 import getWeb3 from "./getWeb3";
-import {Button, TextField} from "@material-ui/core"
+import {Button, TextField, Link} from "@material-ui/core"
+import Alert from '@material-ui/lab/Alert';
 import "./App.css";
 
 const cosmos = require('cosmos-lib');
+const Web3 = require('web3');
 
 class App extends Component {
 
@@ -16,6 +18,7 @@ class App extends Component {
       engBalance: null,
       swapAmount: null,
       recipientAddress: null,
+      recipientAddressBytes: null,
       web3: null,
       accounts: null,
       contract: null,
@@ -25,32 +28,36 @@ class App extends Component {
         swapAmount: '',
         recipientAddress: '',
       },
-      receipt: null
+      receipt: null,
+      transactionInfo: null
     };
   }
 
   handleChange = (event) => {
     event.preventDefault();
     const { name, value } = event.target;
-    const {errors, web3, engBalance, accounts} = this.state;
+    const {errors, engBalance, accounts} = this.state;
 
     switch (name) {
       case 'swapAmount': 
-
         errors.swapAmount = 
-          (value.length <= 0 || 
+          (value.length === 0 || 
           isNaN(value) || 
           parseFloat(value) <= 0 ||
-          parseInt(web3.utils.toWei(value, 'ether')) > parseInt(engBalance))
-            ? `Invalid swap amount. ${accounts[0]} has ${web3.utils.fromWei(engBalance)} ENG`
+          parseInt(Web3.utils.toWei(value, 'ether')) > parseInt(engBalance))
+            ? `Invalid swap amount. ${accounts[0]} has ${Web3.utils.fromWei(engBalance)} ENG`
             : '';
         break;
       case 'recipientAddress': 
+        errors.recipientAddress = ''
         try {
           // checksum
           const bytes32 = cosmos.address.getBytes32(value, "enigma");
-          this.setState({ recipientAddress: value });
-          this.setState({ scrtAddressBytes: bytes32.toString('hex')});
+          this.setState(
+            { 
+              recipientAddress: value ,
+              recipientAddressBytes: bytes32.toString('hex')
+            });
         } catch(error) {
           errors.recipientAddress = error.message;
         }
@@ -122,7 +129,7 @@ class App extends Component {
       );
     } catch (error) {
       // Catch any errors for any of the above operations.
-      alert(
+      this.setTxInfo(
         `Failed to load web3, accounts, or contract. Check console for details.`
       );
       console.error(error);
@@ -130,7 +137,7 @@ class App extends Component {
   };
 
   engBalance = async () => {
-    const { web3, accounts, tokenContract } = this.state;
+    const { accounts, tokenContract } = this.state;
 
     await tokenContract.methods
       .balanceOf(accounts[0])
@@ -142,54 +149,64 @@ class App extends Component {
       });
   };
 
+  setTxInfo = message => {
+    this.setState({transactionInfo: message});
+  }
+
   initiateSwap = async () => {
 
     const {
       accounts,
       swapAmount,
-      recipientAddress,
       contract,
       tokenContract,
-      contractAddress,
-      web3
+      contractAddress
     } = this.state;
 
-    const swapAmountWei = web3.utils.toWei(swapAmount, "ether");
+    const swapAmountWei = Web3.utils.toWei(swapAmount, "ether");
 
     const allowance = await tokenContract.methods.allowance(accounts[0], contractAddress).call()
     
     // Check if current allowance is sufficient, else approve
     if (parseInt(allowance) < parseInt(swapAmountWei)) {
       const approveTx = await tokenContract.methods
-            .approve(contractAddress, swapAmountWei)
-            .send({ from: accounts[0] });
-          if (!approveTx.status) {
-            alert("Failed to approve");
-            return;
-          }
+        .approve(contractAddress, swapAmountWei)
+        .send({ 
+          from: accounts[0],
+          gas: 500000
+        });
+      if (!approveTx.status) {
+        self.setTxInfo("Failed to approve");
+        return;
+      }
     }
 
+    const self = this;
+
     await contract.methods
-      .burnFunds(web3.utils.fromAscii(recipientAddress), swapAmount)
+      .burnFunds(Web3.utils.fromAscii(self.state.recipientAddressBytes), swapAmountWei)
       .send({
         from: accounts[0],
-        gas: 1000000 // todo gas
+        gas: 1000000
       })
       .on("transactionHash", function(hash) {
         console.log(`Broadcasting tx hash=${hash}`);
       })
       .on("receipt", function(receipt) {
-        debugger
-        this.setState({receipt: receipt})
-        console.log(
-          `Got tx receipt. status=${receipt.status}, hash=${receipt.transactionHash}`
-        );
+        self.setState({receipt: receipt})
       })
       .on("confirmation", function(confirmationNumber, receipt) {
-        alert("Successfully swapped");
+        self.setState({receipt: receipt});
+        if (receipt.status === true) {
+          self.setTxInfo("Successfully swapped");
+        } else {
+          self.setTxInfo("Swap failed");
+        }
+        
       })
       .on("error", function(contractError) {
-        alert(contractError.message);
+        console.error(`Contract error: ${contractError.message}`)
+        self.setTxInfo("Swap failed. Check console for details.");
       });
   };
 
@@ -236,10 +253,29 @@ class App extends Component {
 
             <div className='submit'>
               <div className='submit'>
-                <button>Start Swap</button>
+                <Button>Start Swap</Button>
               </div>
             </div>
+
+            <div>
+              {this.state.transactionInfo && (
+                <Alert severity="error">{this.state.transactionInfo}</Alert>  
+              )}
+            </div>
           </form>
+
+          <div>
+
+              {receipt !== null && receipt.transactionHash !== '' && (
+                 <Link href={'https://etherscan/tx/' + receipt.transactionHash}>Tx confirmed: etherscan.io</Link>
+              )}
+
+              {receipt !== null && receipt.status === false && (
+              <Alert severity="error">Swap failed. {receipt.message}</Alert>)}
+
+              {receipt !== null && receipt.status !== false && (
+              <Alert severity="info">Swap initiated</Alert>)}
+            </div>
         </div>
       </div>
     );
