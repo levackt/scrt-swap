@@ -11,7 +11,6 @@ import Checkbox from "@material-ui/core/Checkbox";
 import Link from "@material-ui/core/Link";
 import Typography from "@material-ui/core/Typography";
 import InputTwoToneIcon from "@material-ui/icons/InputTwoTone";
-import DoneIcon from '@material-ui/icons/Done';
 import styled, { ThemeProvider } from "styled-components";
 import Container from "@material-ui/core/Container";
 import CssBaseline from "@material-ui/core/CssBaseline";
@@ -31,6 +30,7 @@ class App extends Component {
 
     this.state = {
       accepted: false,
+      submitting: false,
       tokenBalance: null,
       swapAmount: null,
       recipientAddress: null,
@@ -47,7 +47,8 @@ class App extends Component {
       },
       receipt: null,
       infoMessage: null,
-      errorMessage: null
+      errorMessage: null,
+      transactionHash: null
     };
   }
 
@@ -224,8 +225,11 @@ class App extends Component {
       .allowance(accounts[0], contractAddress)
       .call();
 
+    this.setState({submitting: true});
+
     // Check if current allowance is sufficient, else approve
     if (parseInt(allowance) < parseInt(swapAmountWei)) {
+      self.setInfoMessage("Approve SCRT swap to transfer ENG");
       const approveTx = await tokenContract.methods
         .approve(contractAddress, swapAmountWei)
         .send({
@@ -234,7 +238,10 @@ class App extends Component {
         });
       if (!approveTx.status) {
         self.setErrorMessage("Failed to approve");
+        this.setState({submitting: false});
         return;
+      } else {
+        self.setInfoMessage("Transfer approved. Sign the burnFunds tx in Metamask");
       }
     }
 
@@ -248,13 +255,12 @@ class App extends Component {
         gas: 1000000
       })
       .on("transactionHash", function(hash) {
-        console.log(`Broadcasting tx hash=${hash}`);
+        self.setInfoMessage(`Broadcasting tx`);
       })
       .on("receipt", function(receipt) {
-        self.setState({ receipt: receipt });
+        self.setState({ transactionHash: receipt.transactionHash });
       })
       .on("confirmation", function(confirmationNumber, receipt) {
-        self.setState({ receipt: receipt });
         if (receipt.status === true) {
           self.setInfoMessage("Successfully swapped");
         } else {
@@ -269,6 +275,7 @@ class App extends Component {
 
   canSubmit = () => {
     return (
+      !this.state.submitting &&
       this.state.accepted &&
       this.state.swapAmount > 0 &&
       this.state.recipientAddress &&
@@ -277,7 +284,7 @@ class App extends Component {
   };
 
   render() {
-    const { errors, receipt } = this.state;
+    const { errors } = this.state;
 
     if (!this.state.web3) {
       return <div>Loading Web3, accounts, and contract...</div>;
@@ -291,8 +298,9 @@ class App extends Component {
             <Typography component="h1" variant="h5">
               ENG <InputTwoToneIcon fontSize="small" /> SCRT
             </Typography>
+            <p></p>
             <form noValidate>
-              <Grid container spacing={2}>
+              <Grid container spacing={1}>
                 <Grid item sm={12}>
                   <FormControlLabel
                     control={
@@ -324,7 +332,7 @@ class App extends Component {
                         onChange={this.handleChange}
                       />
                     }
-                    label="SCRT"
+                    label=" SCRT"
                   />
                   {errors.recipientAddress.length > 0 && (
                     <span className="error">{errors.recipientAddress}</span>
@@ -359,12 +367,11 @@ class App extends Component {
                   {this.state.errorMessage && (
                     <Alert severity="error">{this.state.errorMessage}</Alert>
                   )}
-                  {receipt !== null && receipt.transactionHash !== "" && (
+                  {this.state.transactionHash && (
                     <Link
-                      href={"https://etherscan/tx/" + receipt.transactionHash}
+                      href={"https://etherscan.io/tx/" + this.state.transactionHash}
                     >
-                    <DoneIcon fontSize="small"/>
-                      Tx confirmed
+                    {"https://etherscan.io/tx/" + this.state.transactionHash}
                     </Link>
                   )}
                 </Grid>
