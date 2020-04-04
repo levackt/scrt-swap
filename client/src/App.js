@@ -2,32 +2,30 @@ import React, { Component } from "react";
 import EngSwapContract from "./contracts/EngSwap.json";
 import tokenContract from "./contracts/ERC20.json";
 import getWeb3 from "./getWeb3";
-import Alert from '@material-ui/lab/Alert';
+import Alert from "@material-ui/lab/Alert";
 import "./App.css";
-import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Checkbox from '@material-ui/core/Checkbox';
-import Link from '@material-ui/core/Link';
-import Typography from '@material-ui/core/Typography';
-import InputTwoToneIcon from '@material-ui/icons/InputTwoTone';
-import styled, { ThemeProvider } from 'styled-components';
-import { createMuiTheme} from '@material-ui/core/styles';
-import Container from '@material-ui/core/Container';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import Grid from '@material-ui/core/Grid';
-import theme from './theme';
+import Button from "@material-ui/core/Button";
+import TextField from "@material-ui/core/TextField";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import Checkbox from "@material-ui/core/Checkbox";
+import Link from "@material-ui/core/Link";
+import Typography from "@material-ui/core/Typography";
+import InputTwoToneIcon from "@material-ui/icons/InputTwoTone";
+import styled, { ThemeProvider } from "styled-components";
+import { createMuiTheme } from "@material-ui/core/styles";
+import Container from "@material-ui/core/Container";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import Grid from "@material-ui/core/Grid";
+import theme from "./theme";
 
-const cosmos = require('cosmos-lib');
-const Web3 = require('web3');
-
+const cosmos = require("cosmos-lib");
+const Web3 = require("web3");
 
 const StyledButton = styled(Button)`
   color: ${props => props.theme.palette.primary.main};
 `;
 
 class App extends Component {
-
   constructor(props) {
     super(props);
 
@@ -43,53 +41,50 @@ class App extends Component {
       contractAddress: null,
       tokenContract: null,
       errors: {
-        swapAmount: '',
-        recipientAddress: '',
-        termsAccepted: '',
+        swapAmount: "",
+        recipientAddress: "",
+        termsAccepted: ""
       },
       receipt: null,
       infoMessage: null
     };
   }
 
-  handleChange = (event) => {
-
+  handleChange = event => {
     const { name, value, checked } = event.target;
-    const {errors, engBalance} = this.state;
+    const { errors, engBalance } = this.state;
 
     switch (name) {
-      case 'termsAccepted':
-      
+      case "termsAccepted":
         if (!checked) {
-          errors.termsAccepted = 'You must agree to the terms and conditions';
+          errors.termsAccepted = "You must agree to the terms and conditions";
         } else {
-          errors.termsAccepted = ''
+          errors.termsAccepted = "";
         }
 
-        this.setState({accepted: checked});
-        break
-
-      case 'swapAmount':
-        errors.swapAmount = 
-          (value.length === 0 || 
-          isNaN(value) || 
-          parseFloat(value) <= 0 ||
-          parseInt(Web3.utils.toWei(value, 'ether')) > parseInt(engBalance))
-            ? `Invalid swap amount`
-            : '';
+        this.setState({ accepted: checked });
         break;
 
-      case 'recipientAddress': 
-        errors.recipientAddress = ''
+      case "swapAmount":
+        errors.swapAmount =
+          value.length === 0 ||
+          isNaN(value) ||
+          parseFloat(value) <= 0 ||
+          parseInt(Web3.utils.toWei(value, "ether")) > parseInt(engBalance)
+            ? `Invalid swap amount`
+            : "";
+        break;
+
+      case "recipientAddress":
+        errors.recipientAddress = "";
         try {
           // checksum
           const bytes32 = cosmos.address.getBytes32(value, "enigma");
-          this.setState(
-            { 
-              recipientAddress: value ,
-              recipientAddressBytes: bytes32.toString('hex')
-            });
-        } catch(error) {
+          this.setState({
+            recipientAddress: value,
+            recipientAddressBytes: bytes32.toString("hex")
+          });
+        } catch (error) {
           errors.recipientAddress = error.message;
         }
         break;
@@ -98,26 +93,24 @@ class App extends Component {
         break;
     }
 
-    this.setState({errors, [name]: value});
-  }
+    this.setState({ errors, [name]: value });
+  };
 
-  handleSubmit = (event) => {
+  handleSubmit = event => {
     event.preventDefault();
 
-    if(this.validateForm(this.state.errors)) {
+    if (this.validateForm(this.state.errors)) {
       this.initiateSwap();
     } else {
-      this.setInfoMessage(this.state.errors)
+      this.setInfoMessage(this.state.errors);
     }
-  }
+  };
 
-  validateForm = (errors) => {
+  validateForm = errors => {
     let valid = true;
-    Object.values(errors).forEach(
-      (val) => val.length > 0 && (valid = false)
-    );
+    Object.values(errors).forEach(val => val.length > 0 && (valid = false));
     return valid;
-  }
+  };
 
   componentDidMount = async () => {
     try {
@@ -133,10 +126,10 @@ class App extends Component {
 
       // Confirm we have a contract configured
       if (!deployedNetwork) {
-        debugger 
+        debugger;
 
         this.setInfoMessage("Network is unsupported");
-        return
+        return;
       }
 
       let contractAddress = deployedNetwork.address;
@@ -193,11 +186,10 @@ class App extends Component {
   };
 
   setInfoMessage = message => {
-    this.setState({infoMessage: message});
-  }
+    this.setState({ infoMessage: message });
+  };
 
   initiateSwap = async () => {
-
     const {
       accounts,
       swapAmount,
@@ -209,14 +201,16 @@ class App extends Component {
     const swapAmountWei = Web3.utils.toWei(swapAmount, "ether");
 
     const self = this;
-    
-    const allowance = await tokenContract.methods.allowance(accounts[0], contractAddress).call()
-    
+
+    const allowance = await tokenContract.methods
+      .allowance(accounts[0], contractAddress)
+      .call();
+
     // Check if current allowance is sufficient, else approve
     if (parseInt(allowance) < parseInt(swapAmountWei)) {
       const approveTx = await tokenContract.methods
         .approve(contractAddress, swapAmountWei)
-        .send({ 
+        .send({
           from: accounts[0],
           gas: 500000
         });
@@ -227,7 +221,10 @@ class App extends Component {
     }
 
     await contract.methods
-      .burnFunds(Web3.utils.fromAscii(self.state.recipientAddressBytes), swapAmountWei)
+      .burnFunds(
+        Web3.utils.fromAscii(self.state.recipientAddressBytes),
+        swapAmountWei
+      )
       .send({
         from: accounts[0],
         gas: 1000000
@@ -236,10 +233,10 @@ class App extends Component {
         console.log(`Broadcasting tx hash=${hash}`);
       })
       .on("receipt", function(receipt) {
-        self.setState({receipt: receipt})
+        self.setState({ receipt: receipt });
       })
       .on("confirmation", function(confirmationNumber, receipt) {
-        self.setState({receipt: receipt});
+        self.setState({ receipt: receipt });
         if (receipt.status === true) {
           self.setInfoMessage("Successfully swapped");
         } else {
@@ -247,107 +244,123 @@ class App extends Component {
         }
       })
       .on("error", function(contractError) {
-        console.error(`Contract error: ${contractError.message}`)
+        console.error(`Contract error: ${contractError.message}`);
         self.setInfoMessage("Swap failed. Check console for details.");
       });
   };
 
   canSubmit = () => {
-    return this.state.accepted && 
-      this.state.swapAmount > 0 && 
+    return (
+      this.state.accepted &&
+      this.state.swapAmount > 0 &&
       this.state.recipientAddress &&
       this.validateForm(this.state.errors)
-  }
+    );
+  };
 
   render() {
-    const {errors, receipt} = this.state;
+    const { errors, receipt } = this.state;
 
     if (!this.state.web3) {
       return <div>Loading Web3, accounts, and contract...</div>;
     }
-    
+
     return (
-
-    <Container component="main" maxWidth="xs">
-      <CssBaseline />
-      <ThemeProvider theme={theme}>
-      <div className="App">
-        <Typography component="h1" variant="h5">
-          ENG <InputTwoToneIcon fontSize="small"/> SCRT
-        </Typography>
-          <form noValidate>
-             <Grid container spacing={2}>
+      <Container component="main" maxWidth="xs">
+        <CssBaseline />
+        <ThemeProvider theme={theme}>
+          <div className="App">
+            <Typography component="h1" variant="h5">
+              ENG <InputTwoToneIcon fontSize="small" /> SCRT
+            </Typography>
+            <form noValidate>
+              <Grid container spacing={2}>
                 <Grid item sm={12}>
-                  <FormControlLabel control={
-                    <TextField
-                      required
-                      name="swapAmount"
-                      label="Amount to swap"
-                      autoFocus
-                      onChange={this.handleChange}
-                    />
-                  }
-                  label={this.state.maxSwap}/>
+                  <FormControlLabel
+                    control={
+                      <TextField
+                        required
+                        name="swapAmount"
+                        label="Amount to swap"
+                        autoFocus
+                        onChange={this.handleChange}
+                      />
+                    }
+                    label={this.state.maxSwap}
+                  />
                 </Grid>
 
                 <Grid item sm={12}>
-                {errors.swapAmount.length > 0 && 
-                  <span className='error'>{errors.swapAmount}</span>}
+                  {errors.swapAmount.length > 0 && (
+                    <span className="error">{errors.swapAmount}</span>
+                  )}
                 </Grid>
 
                 <Grid item sm={12}>
-                  <FormControlLabel control={
-                    <TextField
-                      required
-                      name="recipientAddress"
-                      label="SCRT address"
-                      onChange={this.handleChange}
-                    />
-                  }
-                  label="? SCRT"/>
-                  {errors.recipientAddress.length > 0 && 
-                  <span className='error'>{errors.recipientAddress}</span>}
-                  </Grid>
-                  <Grid item sm={12}>
-                    <FormControlLabel control={
-                        <Checkbox
-                          onChange={this.handleChange}
-                          checked={this.state.accepted}
-                          name="termsAccepted"
-                          color="primary"
-                        />
-                      }
-                      label = "Agree to the SCRT swap conditions?"/>
-                      </Grid>
-                      <Grid item sm={12}>
-                        <StyledButton 
-                          onClick={this.handleSubmit} 
-                          disabled={!this.canSubmit()}
-                        >Start Swap
-                        </StyledButton>
-                        </Grid>
+                  <FormControlLabel
+                    control={
+                      <TextField
+                        required
+                        name="recipientAddress"
+                        label="SCRT address"
+                        onChange={this.handleChange}
+                      />
+                    }
+                    label="? SCRT"
+                  />
+                  {errors.recipientAddress.length > 0 && (
+                    <span className="error">{errors.recipientAddress}</span>
+                  )}
+                </Grid>
+                <Grid item sm={12}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={this.handleChange}
+                        checked={this.state.accepted}
+                        name="termsAccepted"
+                        color="primary"
+                      />
+                    }
+                    label="Agree to the SCRT swap conditions?"
+                  />
+                </Grid>
+                <Grid item sm={12}>
+                  <StyledButton
+                    onClick={this.handleSubmit}
+                    disabled={!this.canSubmit()}
+                  >
+                    Start Swap
+                  </StyledButton>
+                </Grid>
 
-                        <Grid item xs={12}>
+                <Grid item xs={12}>
+                  {this.state.infoMessage && (
+                    <Alert severity="error">{this.state.infoMessage}</Alert>
+                  )}
+                  {receipt !== null && receipt.transactionHash !== "" && (
+                    <Link
+                      href={"https://etherscan/tx/" + receipt.transactionHash}
+                    >
+                      Tx confirmed: etherscan.io
+                    </Link>
+                  )}
 
-                          {this.state.infoMessage && (
-                            <Alert severity="error">{this.state.infoMessage}</Alert>  
-                          )}
-                          {receipt !== null && receipt.transactionHash !== '' && (
-                            <Link href={'https://etherscan/tx/' + receipt.transactionHash}>Tx confirmed: etherscan.io</Link>
-                          )}
+                  {receipt !== null && receipt.status === false && (
+                    <Alert severity="error">
+                      Swap failed. {receipt.message}
+                    </Alert>
+                  )}
 
-                          {receipt !== null && receipt.status === false && (
-                          <Alert severity="error">Swap failed. {receipt.message}</Alert>)}
-
-                          {receipt !== null && receipt.status !== false && (
-                          <Alert severity="info">Swap initiated</Alert>)}
-                        </Grid>
+                  {receipt !== null && receipt.status !== false && (
+                    <Alert severity="info">Swap initiated</Alert>
+                  )}
+                </Grid>
               </Grid>
-          </form>
-        </div>
-      </ThemeProvider>
-
-    </Container>
+            </form>
+          </div>
+        </ThemeProvider>
+      </Container>
     );
   }
 }
