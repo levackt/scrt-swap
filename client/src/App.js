@@ -11,8 +11,8 @@ import Checkbox from "@material-ui/core/Checkbox";
 import Link from "@material-ui/core/Link";
 import Typography from "@material-ui/core/Typography";
 import InputTwoToneIcon from "@material-ui/icons/InputTwoTone";
+import DoneIcon from '@material-ui/icons/Done';
 import styled, { ThemeProvider } from "styled-components";
-import { createMuiTheme } from "@material-ui/core/styles";
 import Container from "@material-ui/core/Container";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Grid from "@material-ui/core/Grid";
@@ -31,7 +31,7 @@ class App extends Component {
 
     this.state = {
       accepted: false,
-      engBalance: null,
+      tokenBalance: null,
       swapAmount: null,
       recipientAddress: null,
       recipientAddressBytes: null,
@@ -46,13 +46,14 @@ class App extends Component {
         termsAccepted: ""
       },
       receipt: null,
-      infoMessage: null
+      infoMessage: null,
+      errorMessage: null
     };
   }
 
   handleChange = event => {
     const { name, value, checked } = event.target;
-    const { errors, engBalance } = this.state;
+    const { errors, tokenBalance } = this.state;
 
     switch (name) {
       case "termsAccepted":
@@ -70,7 +71,7 @@ class App extends Component {
           value.length === 0 ||
           isNaN(value) ||
           parseFloat(value) <= 0 ||
-          parseInt(Web3.utils.toWei(value, "ether")) > parseInt(engBalance)
+          parseInt(Web3.utils.toWei(value, "ether")) > parseInt(tokenBalance)
             ? `Invalid swap amount`
             : "";
         break;
@@ -102,7 +103,7 @@ class App extends Component {
     if (this.validateForm(this.state.errors)) {
       this.initiateSwap();
     } else {
-      this.setInfoMessage(this.state.errors);
+      this.setErrorMessage(this.state.errors);
     }
   };
 
@@ -112,66 +113,79 @@ class App extends Component {
     return valid;
   };
 
+  networkHandler = async (networkId) => {
+    const {web3} = this.state;
+
+    const deployedNetwork = EngSwapContract.networks[networkId];
+
+    // Confirm we have a contract configured
+    if (!deployedNetwork) {
+      this.setErrorMessage("Network is unsupported");
+      return;
+    } else {
+      this.setErrorMessage("");
+    }
+
+    let contractAddress = deployedNetwork.address;
+    const instance = new web3.eth.Contract(
+      EngSwapContract.abi,
+      deployedNetwork && contractAddress
+    );
+
+    let tokenAddress = null;
+
+    await instance.methods
+      .token()
+      .call()
+      .then(result => {
+        console.log(`Swapping with ENG contract at address: ${result}`);
+        tokenAddress = result;
+      });
+      const tokenInstance = new web3.eth.Contract(
+        tokenContract.abi,
+        deployedNetwork && tokenAddress
+      );
+      
+      this.setState({
+        contract: instance,
+        contractAddress: contractAddress,
+        tokenContract: tokenInstance
+      },
+      this.tokenBalance
+    );
+  }
+
+  accountsHandler = accounts => {
+    this.setState({accounts: accounts});
+    this.tokenBalance();
+  }
+
   componentDidMount = async () => {
     try {
       // Get network provider and web3 instance.
-      const web3 = await getWeb3();
+      const web3 = await getWeb3(this.accountsHandler, this.networkHandler);
 
       // Use web3 to get the user's accounts.
       const accounts = await web3.eth.getAccounts();
 
       // Get the contract instance.
       const networkId = await web3.eth.net.getId();
-      const deployedNetwork = EngSwapContract.networks[networkId];
+      this.setState({
+        web3: web3,
+        accounts: accounts,
+      });
 
-      // Confirm we have a contract configured
-      if (!deployedNetwork) {
-        debugger;
-
-        this.setInfoMessage("Network is unsupported");
-        return;
-      }
-
-      let contractAddress = deployedNetwork.address;
-      const instance = new web3.eth.Contract(
-        EngSwapContract.abi,
-        deployedNetwork && contractAddress
-      );
-
-      let tokenAddress = null;
-
-      await instance.methods
-        .token()
-        .call()
-        .then(result => {
-          console.log(`Swapping with ENG contract at address: ${result}`);
-          tokenAddress = result;
-        });
-      let tokenInstance = new web3.eth.Contract(
-        tokenContract.abi,
-        deployedNetwork && tokenAddress
-      );
-
-      this.setState(
-        {
-          web3: web3,
-          accounts: accounts,
-          contract: instance,
-          contractAddress: contractAddress,
-          tokenContract: tokenInstance
-        },
-        this.engBalance
-      );
+      this.networkHandler(networkId);
     } catch (error) {
       // Catch any errors for any of the above operations.
-      this.setInfoMessage(
+      this.setErrorMessage(
         `Failed to load web3, accounts, or contract. Check console for details.`
       );
       console.error(error);
     }
   };
 
-  engBalance = async () => {
+  tokenBalance = async () => {
     const { accounts, tokenContract } = this.state;
 
     await tokenContract.methods
@@ -179,7 +193,7 @@ class App extends Component {
       .call()
       .then(result => {
         this.setState({
-          engBalance: result,
+          tokenBalance: result,
           maxSwap: Web3.utils.fromWei(result, "ether") + " ENG"
         });
       });
@@ -187,6 +201,10 @@ class App extends Component {
 
   setInfoMessage = message => {
     this.setState({ infoMessage: message });
+  };
+
+  setErrorMessage = message => {
+    this.setState({ errorMessage: message });
   };
 
   initiateSwap = async () => {
@@ -215,7 +233,7 @@ class App extends Component {
           gas: 500000
         });
       if (!approveTx.status) {
-        self.setInfoMessage("Failed to approve");
+        self.setErrorMessage("Failed to approve");
         return;
       }
     }
@@ -240,12 +258,12 @@ class App extends Component {
         if (receipt.status === true) {
           self.setInfoMessage("Successfully swapped");
         } else {
-          self.setInfoMessage("Swap failed");
+          self.setErrorMessage("Swap failed");
         }
       })
       .on("error", function(contractError) {
         console.error(`Contract error: ${contractError.message}`);
-        self.setInfoMessage("Swap failed. Check console for details.");
+        self.setErrorMessage("Swap failed. Check console for details.");
       });
   };
 
@@ -306,7 +324,7 @@ class App extends Component {
                         onChange={this.handleChange}
                       />
                     }
-                    label="? SCRT"
+                    label="SCRT"
                   />
                   {errors.recipientAddress.length > 0 && (
                     <span className="error">{errors.recipientAddress}</span>
@@ -322,7 +340,7 @@ class App extends Component {
                         color="primary"
                       />
                     }
-                    label="Agree to the SCRT swap conditions?"
+                    label="Agree to the terms and conditions"
                   />
                 </Grid>
                 <Grid item sm={12}>
@@ -336,24 +354,18 @@ class App extends Component {
 
                 <Grid item xs={12}>
                   {this.state.infoMessage && (
-                    <Alert severity="error">{this.state.infoMessage}</Alert>
+                    <Alert severity="info">{this.state.infoMessage}</Alert>
+                  )}
+                  {this.state.errorMessage && (
+                    <Alert severity="error">{this.state.errorMessage}</Alert>
                   )}
                   {receipt !== null && receipt.transactionHash !== "" && (
                     <Link
                       href={"https://etherscan/tx/" + receipt.transactionHash}
                     >
-                      Tx confirmed: etherscan.io
+                    <DoneIcon fontSize="small"/>
+                      Tx confirmed
                     </Link>
-                  )}
-
-                  {receipt !== null && receipt.status === false && (
-                    <Alert severity="error">
-                      Swap failed. {receipt.message}
-                    </Alert>
-                  )}
-
-                  {receipt !== null && receipt.status !== false && (
-                    <Alert severity="info">Swap initiated</Alert>
                   )}
                 </Grid>
               </Grid>
