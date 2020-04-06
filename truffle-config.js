@@ -11,5 +11,8 @@ module.exports = {
       gas: 4700000,
       network_id: '50'
     }
+  },
+  mocha: {
+    reporter: 'eth-gas-reporter'
   }
 };

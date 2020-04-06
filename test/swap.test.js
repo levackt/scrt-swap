@@ -70,7 +70,7 @@ describe("EngSwap", () => {
     const receipts = [];
     it("...should burn funds.", async () => {
         for (let i = 1; i < 5; i++) {
-            const recipient = `0x${i}`;
+            const recipient = `enigma1${i}`;
             const tokenDecimals = web3.utils.toBN(18);
             const tokenAmountToBurn = web3.utils.toBN(10);
             const amount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
@@ -78,7 +78,7 @@ describe("EngSwap", () => {
             const approveTx = await tokenContract.methods.approve(deployedSwap.address, amount).send({from: accounts[i]});
             expect(web3.utils.toChecksumAddress(approveTx.from)).to.equal(accounts[i]);
             expect(approveTx.status).to.equal(true);
-            const burnTx = await swapContract.methods.burnFunds(recipient, amount).send({
+            const burnTx = await swapContract.methods.burnFunds(web3.utils.fromAscii(recipient), amount).send({
                 from: accounts[i],
                 gas: 1000000,
             });

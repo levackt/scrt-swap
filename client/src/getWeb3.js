@@ -1,11 +1,19 @@
 import Web3 from "web3";
 
-const getWeb3 = () =>
+const getWeb3 = (accountsHandler, networkHandler) =>
   new Promise((resolve, reject) => {
     // Wait for loading completion to avoid race conditions with web3 injection timing.
     window.addEventListener("load", async () => {
       // Modern dapp browsers...
       if (window.ethereum) {
+        window.ethereum.autoRefreshOnNetworkChange = false;
+        
+        window.ethereum.on("networkChanged", function(networkId) {
+          networkHandler(networkId);
+        });
+        window.ethereum.on("accountsChanged", function(accounts) {
+          accountsHandler(accounts);
+        });
         const web3 = new Web3(window.ethereum);
         try {
           // Request account access if needed
@@ -20,7 +28,6 @@ const getWeb3 = () =>
       else if (window.web3) {
         // Use Mist/MetaMask's provider.
         const web3 = window.web3;
-        console.log("Injected web3 detected.");
         resolve(web3);
       }
       // Fallback to localhost; use dev console port by default...
