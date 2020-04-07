@@ -19,7 +19,9 @@
   },
   "scripts": {
     "test": "yarn migrate && mocha --exit ./test/swap.test.js",
-    "migrate": "npx truffle migrate --network develop --reset"
+    "migrate": "npx truffle migrate --network develop --reset",
+    "migrate:rinkeby": "npx truffle migrate --network rinkeby",
+    "migrate:ropsten": "npx truffle migrate --network ropsten"
   },
   "license": "(MIT OR Apache-2.0)",
   "version": "0.0.0"
