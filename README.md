@@ -72,7 +72,7 @@ First ensure you are in a new and empty directory.
     `EngSwap` contract. The contract has single `burnFunds(bytes memory _recipient, uint256 _amount)`
     public function. Usage specs and examples can be found in `swap.test.js`.
     When all the components are online, swaps can be tested by calling
-    `burnFunds` using Remix or Web3, or buy creating a page in the frontend.
+    `burnFunds` using Remix or Web3, or by creating a page in the frontend.
 
 ## FAQ
 
