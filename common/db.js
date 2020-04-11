@@ -43,7 +43,7 @@ class Db {
     }
 
     async insertSignature(user, transactionHash, signature) {
-        const record = {_id: signature, user, transactionHash, signature};
+        const record = {_id: signature.signature, user, transactionHash, signature};
         this.db.collection(SIGNATURE_COLLECTION).insertOne(record);
     }
 
@@ -70,6 +70,28 @@ class Db {
     async fetchUnsignedTx(transactionHash) {
         const query = {_id: transactionHash};
         const swap = await this.db.collection(SWAP_COLLECTION).findOne(query);
+        return swap.unsignedTx;
+    }
+
+    /**
+     * Completes the swap.
+     * @param mintTransactionHash - The Enigma Chain mint transaction hash
+     */
+    async completeSwap(transactionHash, mintTransactionHash) {
+        if (!mintTransactionHash) {
+            return
+        }
+        // todo verify the tx hash to be successful
+
+        const query = {_id: transactionHash};
+        const swap = await this.db.collection(SWAP_COLLECTION).findOne(query);
+        
+        var values = { $set: {status: 1, mintTransactionHash: mintTransactionHash } };
+        this.db.collection(SWAP_COLLECTION).updateOne(query, values, function(err, res) {
+            if (err) throw err;
+            console.log(`Completed transactionHash=${transactionHash}, mintTransactionHash=${mintTransactionHash}`);
+            db.close();
+        });
         return swap.unsignedTx;
     }
 

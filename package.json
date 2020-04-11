@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^2.5.0",
+    "console-stamp": "^0.2.9",
     "dotenv": "^8.2.0",
     "dotenv-defaults": "^1.1.1",
     "mongodb": "^3.3.5",

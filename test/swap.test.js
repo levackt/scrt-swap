@@ -2,6 +2,7 @@ require('dotenv').config();
 const {Leader} = require("../leader");
 const {Operator} = require("../operator");
 const {Db, SWAP_COLLECTION, SIGNATURE_COLLECTION} = require("../common/db");
+const {MockTokenSwapClient} = require("./mock_file_swap_client");
 
 const Web3 = require('web3');
 const EngSwap = require("../client/src/contracts/EngSwap.json");
@@ -40,7 +41,7 @@ describe("EngSwap", () => {
         await db.clear(SWAP_COLLECTION);
         await db.clear(SIGNATURE_COLLECTION);
         const fromBlock = await web3.eth.getBlockNumber();
-        leader = new Leader(multisigAddress, db, provider, networkId, fromBlock);
+        leader = new Leader(new MockTokenSwapClient(), multisigAddress, db, provider, networkId, fromBlock);
         swapContract = new web3.eth.Contract(
             EngSwap.abi,
             deployedSwap.address,
@@ -62,7 +63,7 @@ describe("EngSwap", () => {
         }
         for (let i = 0; i < 3; i++) {
             const user = `operator${i}`;
-            const operator = new Operator(user, multisigAddress, db, provider, networkId, parseInt(nbConfirmations), fromBlock);
+            const operator = new Operator(new MockTokenSwapClient(), user, multisigAddress, db, provider, networkId, parseInt(nbConfirmations), fromBlock);
             operators.push(operator);
         }
     });

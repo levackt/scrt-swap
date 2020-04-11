@@ -4,6 +4,7 @@ class Operator {
     /**
      * For each LogBurn event on Ethereum, submit signature to Leader
      *
+     * @param {TokenSwapClient} tokenSwapClient - Implements token swap operations.
      * @param {Db} db
      * @param {string} user - The Enigma Chain operator key alias
      * @param {string} multisig - The multisig address
@@ -13,12 +14,13 @@ class Operator {
      * @param fromBlock
      * @param pollingInterval
      */
-    constructor(user, multisig, db, provider, networkId, nbConfirmation = 12,
+    constructor(tokenSwapClient, user, multisig, db, provider, networkId, nbConfirmation = 12,
                 fromBlock = 0, pollingInterval = 30000) {
         this.user = user;
         this.multisig = multisig;
         this.burnWatcher = new BurnWatcher(provider, networkId, nbConfirmation, fromBlock, pollingInterval);
         this.db = db;
+        this.tokenSwapClient = tokenSwapClient;
     }
 
     async run() {
@@ -32,18 +34,13 @@ class Operator {
             } catch (e) {
                 // If this happens, skipped LogBurn will have to be re-processed either by resetting fromBlock or manually
                 console.error('The operator found a LogBurn event unregistered by the Leader. Is the leader running.')
+                //todo shutdown until leader is up again?
             }
             if (unsignedTx) {
                 try {
-                    // Sign unsigned tx like this:
-                    // gaiacli tx sign \
-                    //   unsignedTx.json \
-                    //   --multisig=<multisig_address> \
-                    //   --from=p1 \
-                    //   --output-document=p1signature.json
-                    // TODO: This is a mock but the actual signature should be unique as well
-                    const signature = `{\"signature\": \"${this.user}${transactionHash}\"}`;
+                    const signature = await this.tokenSwapClient.signTokenSwapRequest(unsignedTx);
                     await this.db.insertSignature(this.user, transactionHash, signature);
+                    console.log(`signed tx hash ${transactionHash}`)
                 } catch (e) {
                     console.error('Cannot sign unsigned tx', unsignedTx, logBurn, e);
                 }

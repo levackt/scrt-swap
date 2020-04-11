@@ -11,6 +11,7 @@ const {BurnWatcher} = require('../common/burn_watcher');
  * @property {string | null} mintTransactionHash - The Enigma Chain mint transaction hash
  * @property {string} unsignedTx - The unsigned transaction encoded in JSON
  * @property {number} status - 0=Unsigned; 1=Signed; 2=Submitted; 3=Confirmed
+ * @param {TokenSwapClient} tokenSwapClient - Implements token swap operations.
  */
 
 /**
@@ -30,26 +31,34 @@ class Leader {
      * `enigmacli keys add --multisig=name1,name2,name3[...] --multisig-threshold=K new_key_name`
      *
      * @param {string} multisig - The multisig address
+     * @param {TokenSwapClient} tokenSwapClient - Implements token swap operations.
      * @param {Db} db
      * @param provider
      * @param networkId
      * @param fromBlock
      * @param pollingInterval
      */
-    constructor(multisig, db, provider, networkId, fromBlock = 0, pollingInterval = 30000) {
+    constructor(tokenSwapClient, multisig, db, provider, networkId, fromBlock = 0, pollingInterval = 30000) {
         this.multisig = multisig;
         this.burnWatcher = new BurnWatcher(provider, networkId, 0, fromBlock, pollingInterval);
         this.db = db;
+        this.tokenSwapClient = tokenSwapClient;
     }
 
     async run() {
         for await (let logBurn of this.burnWatcher.watchBurnLog()) {
             try {
-                // Generate unsigned tx like this:
-                // `gaiacli tx send cosmos1570v2fq3twt0f0x02vhxpuzc9jc4yl30q2qned 1000000uatom \
-                //   --from=<multisig_address> \
-                //   --generate-only > unsignedTx.json`
-                const unsignedTx = '{\"unsigned-tx\": \"dummy\"}';
+                const unsignedTx = this.tokenSwapClient.generateTokenSwap(
+                    logBurn.transactionHash, 
+                    logBurn.from, 
+                    logBurn.amount, 
+                    logBurn.to
+                );
+
+                // Sign the tx so any thresholder can verify and broadcast
+                const leaderSignature = await this.tokenSwapClient.signTokenSwapRequest(unsignedTx);
+                console.log(`leaderSignature: ${leaderSignature}`)
+                
                 /** @type Swap */
                 const unsignedSwap = {
                     ...logBurn,
@@ -57,13 +66,13 @@ class Leader {
                     mintTransactionHash: null,
                     unsignedTx,
                     status: 0,
+                    leaderSignature
                 };
                 console.log('Storing unsigned swap', logBurn);
                 await this.db.insertUnsignedSwap(unsignedSwap);
             } catch (e) {
                 console.error('Cannot create unsigned tx', logBurn, e);
             }
-            // TODO: Sign as the leader
         }
     }
 }
