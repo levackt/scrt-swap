@@ -40,7 +40,7 @@ class Operator {
                 try {
                     const signature = await this.tokenSwapClient.signTokenSwapRequest(unsignedTx);
                     await this.db.insertSignature(this.user, transactionHash, signature);
-                    console.log(`signed tx hash ${transactionHash}`)
+                    console.log(`signed tx hash ${transactionHash}`);                    
                 } catch (e) {
                     console.error('Cannot sign unsigned tx', unsignedTx, logBurn, e);
                 }

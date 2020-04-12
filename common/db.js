@@ -78,6 +78,7 @@ class Db {
      * @param mintTransactionHash - The Enigma Chain mint transaction hash
      */
     async completeSwap(transactionHash, mintTransactionHash) {
+        console.log(`completing swap ${transactionHash}, ${mintTransactionHash}`)
         if (!mintTransactionHash) {
             return
         }
@@ -90,7 +91,6 @@ class Db {
         this.db.collection(SWAP_COLLECTION).updateOne(query, values, function(err, res) {
             if (err) throw err;
             console.log(`Completed transactionHash=${transactionHash}, mintTransactionHash=${mintTransactionHash}`);
-            db.close();
         });
         return swap.unsignedTx;
     }
