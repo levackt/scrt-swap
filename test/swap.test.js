@@ -154,7 +154,6 @@ describe("EngSwap", () => {
         await sleep(1000);
         await leader.stopBroadcasting();
         const unsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
-        //todo broadcast swaps and confirm status
         expect(unsignedSwaps.length).to.equal(0);
     });
 });

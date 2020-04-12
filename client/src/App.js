@@ -19,6 +19,7 @@ import theme from "./theme";
 
 const cosmos = require("cosmos-lib");
 const Web3 = require("web3");
+const prefix = process.env.REACT_APP_BECH32_PREFIX || 'enigma';
 
 const StyledButton = styled(Button)`
   color: ${props => props.theme.palette.primary.main};
@@ -80,8 +81,7 @@ class App extends Component {
       case "recipientAddress":
         errors.recipientAddress = "";
         try {
-          // checksum
-          const bytes32 = cosmos.address.getBytes32(value, "enigma");
+          const bytes32 = cosmos.address.getBytes32(value, prefix);
           this.setState({
             recipientAddress: value,
             recipientAddressBytes: bytes32.toString("hex")

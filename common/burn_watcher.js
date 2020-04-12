@@ -52,9 +52,9 @@ class BurnWatcher {
                 const logBurn = {
                     transactionHash: evt.transactionHash,
                     from: this.web3.utils.toChecksumAddress(evt.returnValues['_from']),
-                    to: evt.returnValues['_to'], // The Cosmos chain address
-                    amount: this.web3.utils.toBN(evt.returnValues['_amount']),
-                    nonce: this.web3.utils.toBN(evt.returnValues['_nonce']),
+                    to: this.web3.utils.hexToAscii(evt.returnValues['_to']), // The Cosmos chain address
+                    amount: evt.returnValues['_amount'], 
+                    nonce: evt.returnValues['_nonce'],
                 };
                 yield logBurn;
             }

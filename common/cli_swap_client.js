@@ -37,7 +37,7 @@ class CliSwapClient {
       });
       if (signed) {
         //todo confirm properly signed and handle some edge cases
-        await executeCommand(`${this.chainclient} tx broadcast ${signedFile}`, function(result) {
+        await executeCommand(`${this.chainClient} tx broadcast ${signedFile}`, function(result) {
            return JSON.parse(result)
         });
       }
@@ -68,11 +68,8 @@ class CliSwapClient {
    * @param {*} recipientAddress Address for newly minted tokens
    */
   async generateTokenSwap(ethTxHash, senderEthAddress, amountTokens, recipientAddress) {
-    let createTxCmd = `enigmacli tx tokenswap create 
-        ${ethTxHash} ${senderEthAddress} ${amountTokens} ${recipientAddress} 
-        --generate-only 
-        --from=${this.multisigAddress}`;
-
+    let createTxCmd = `${this.chainClient} tx tokenswap create ${ethTxHash} ${senderEthAddress} ${amountTokens} ${recipientAddress} --from=${this.multisigAddress} --generate-only`;
+// todo lint
     if (this.keyringBackend) {
       createTxCmd = `${createTxCmd} --keyring-backend ${this.keyringBackend}`;
     }
