@@ -22,6 +22,9 @@ describe("EngSwap", () => {
     const ethHost = process.env.ETH_HOST || 'localhost';
     const ethPort = process.env.ETH_PORT || '8545';
     const networkId = process.env.NETWORK_ID || '50';
+    const pollingInterval = 1000;
+    const multisigThreshold = 2;
+    const broadcastInterval = 500;
     const provider = new Web3.providers.HttpProvider('http://' + ethHost + ':' + ethPort);
     const web3 = new Web3(provider);
     const deployedSwap = EngSwap.networks[networkId];
@@ -41,7 +44,8 @@ describe("EngSwap", () => {
         await db.clear(SWAP_COLLECTION);
         await db.clear(SIGNATURE_COLLECTION);
         const fromBlock = await web3.eth.getBlockNumber();
-        leader = new Leader(new MockTokenSwapClient(), multisigAddress, db, provider, networkId, fromBlock);
+        leader = new Leader(new MockTokenSwapClient(), multisigAddress, db, provider, networkId, fromBlock, 
+            pollingInterval, multisigThreshold, broadcastInterval);
         swapContract = new web3.eth.Contract(
             EngSwap.abi,
             deployedSwap.address,
@@ -139,5 +143,18 @@ describe("EngSwap", () => {
         // Using threshold of 2 for 3 operators should return a positive
         const unsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
         expect(unsignedSwaps.length).to.equal(nbSwaps);
+    });
+
+    it("...should broadcast successfully.", async () => {
+        
+        (async () => {
+            await leader.broadcastSignedSwaps();
+        })();
+        
+        await sleep(1000);
+        await leader.stopBroadcasting();
+        const unsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
+        //todo broadcast swaps and confirm status
+        expect(unsignedSwaps.length).to.equal(0);
     });
 });

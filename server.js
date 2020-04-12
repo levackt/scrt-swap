@@ -16,12 +16,14 @@ const multisigAddress = process.env.MULTISIG_ADDRESS || 'enigma12345';
 const keyringBackend = process.env.KEYRING_BACKEND || 'test';
 const chainClient = process.env.CHAIN_CLIENT || 'enigmacli';
 const nbConfirmations = process.env.NB_CONFIRMATIONS || '12';
+const multisigThreshold = process.env.MULTISIG_THRESHOLD || 2;
+const broadcastInterval = process.env.BROADCAST_INTERVAL || 30000;
 const user = process.env.OPERATOR_USER;
 const fromAccount = process.env.FROM_ACCOUNT;
 const db_url = process.env.MONGO_URL || 'mongodb://localhost:27017';
 const db = new Db(db_url, 'enigma-swap');
 
-if (!user) {
+if (process.env.ROLE === 'operator' && !user) {
     throw new Error('OPERATOR_USER env variable required');
 }
 const tokenSwapClient = new CliSwapClient(chainClient, fromAccount, keyringBackend, multisigAddress);
@@ -37,7 +39,13 @@ const tokenSwapClient = new CliSwapClient(chainClient, fromAccount, keyringBacke
         const operator = new Operator(tokenSwapClient, user, multisigAddress, db, provider, networkId, nbConfirmations, fromBlock, pollingInterval);
         await operator.run();
     } else if (process.env.ROLE === 'leader') {
-        const leader = new Leader(tokenSwapClient, multisigAddress, db, provider, networkId, fromBlock, pollingInterval);
+        const leader = new Leader(tokenSwapClient, multisigAddress, db, provider, networkId, fromBlock, pollingInterval,
+            multisigThreshold, broadcastInterval);
+
+        (async () => {
+            await leader.broadcastSignedSwaps();
+        })();
+        
         await leader.run();
     }
 })().catch(async e => {

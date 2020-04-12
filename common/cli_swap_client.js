@@ -21,9 +21,9 @@ class CliSwapClient {
   async broadcastTokenSwap(signatures, unsignedTx) {
       
       var unsignedFile = temp.path()
-      let signCmd = `${this.chainClient} tx multisign ${unsignedFile} ${this.multisigAddress}`
+      let signCmd = `${this.chainClient} tx multisign ${unsignedFile} ${this.multisigAddress} --yes`
       fs.writeFileSync(unsignedFile, unsignedTx);
-      for (signature in signatures) {
+      for (const signature in signatures) {
         var tempName = temp.path();
         fs.writeFileSync(tempName, JSON.stringify(signature));
         signCmd = `${signCmd} ${tempName}`
@@ -36,7 +36,10 @@ class CliSwapClient {
           signed = result
       });
       if (signed) {
-        await executeCommand(`${this.chainclient} tx broadcast ${signedFile}`, function() {});
+        //todo confirm properly signed and handle some edge cases
+        await executeCommand(`${this.chainclient} tx broadcast ${signedFile}`, function(result) {
+           return JSON.parse(result)
+        });
       }
   }
 
@@ -45,7 +48,7 @@ class CliSwapClient {
     var unsignedFile = temp.path()
     fs.writeFileSync(unsignedFile, unsignedTx);
 
-    let signCmd = `${this.chainClient} tx sign ${unsignedFile} --from=${this.fromAccount}`;
+    let signCmd = `${this.chainClient} tx sign ${unsignedFile} --from=${this.fromAccount} --yes`;
 
     if (this.keyringBackend) {
         signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
@@ -76,12 +79,12 @@ class CliSwapClient {
     var unsignedFile = temp.path({ prefix: "unsigned-", suffix: ".json" });
     createTxCmd = `${createTxCmd} > ${unsignedFile}`;
 
-    await executeCommand(createTxCmd, function(unsigned) {
+    await this.executeCommand(createTxCmd, function(unsigned) {
         return unsigned
     });
   }
 
-  *executeCommand(cmd, callback) {
+  async executeCommand(cmd, callback) {
     console.log(`Executing cmd : ${cmd} --output json`);
     exec(`${cmd} --output json`, (error, stdout, stderr) => {
       if (error) {

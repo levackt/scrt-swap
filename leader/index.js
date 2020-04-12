@@ -37,12 +37,46 @@ class Leader {
      * @param networkId
      * @param fromBlock
      * @param pollingInterval
+     * @param multisigThreshold Minimum number of signatures to broadcast tx
      */
-    constructor(tokenSwapClient, multisig, db, provider, networkId, fromBlock = 0, pollingInterval = 30000) {
+    constructor(tokenSwapClient, multisig, db, provider, networkId, fromBlock = 0, pollingInterval = 30000, 
+        multisigThreshold = 2, broadcastInterval = 1000) {
         this.multisig = multisig;
+        this.multisigThreshold = multisigThreshold;
+        this.broadcastInterval = broadcastInterval;
         this.burnWatcher = new BurnWatcher(provider, networkId, 0, fromBlock, pollingInterval);
         this.db = db;
         this.tokenSwapClient = tokenSwapClient;
+        this.broadcasting = false;
+    }
+
+    stopBroadcasting() {
+        this.broadcasting = false;
+    }
+
+    async broadcastSignedSwaps() {
+        console.log('Watching for signed swaps');
+        this.broadcasting = true;
+        do {
+            const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold);
+            console.log(`Found ${signedSwaps.length} swaps`)
+            for (const swap in signedSwaps) {
+                const result = await this.tokenSwapClient.broadcastTokenSwap(
+                    signedSwaps[swap].signatures, 
+                    signedSwaps[swap].unsignedTx
+                );
+                if (result.txhash) {
+                    //todo confirm tx
+                    console.log("completing swap")
+                    await this.db.completeSwap(signedSwaps[swap].transactionHash, result.txhash);
+                } else {
+                    console.error(`broadcastSignedSwaps result: ${result}`)
+                }
+            }
+            await new Promise((resolve) => {
+                setTimeout(() => resolve(true), this.broadcastInterval);
+            })
+        } while (this.broadcasting);
     }
 
     async run() {
@@ -55,9 +89,8 @@ class Leader {
                     logBurn.to
                 );
 
-                // Sign the tx so any thresholder can verify and broadcast
+                // Sign the tx so any thresholder can verify and broadcast, though broadcasting is restricted to leader for now
                 const leaderSignature = await this.tokenSwapClient.signTokenSwapRequest(unsignedTx);
-                console.log(`leaderSignature: ${leaderSignature}`)
                 
                 /** @type Swap */
                 const unsignedSwap = {
