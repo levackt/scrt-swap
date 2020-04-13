@@ -8,7 +8,7 @@ contract EngSwap {
 
     IERC20 public token;
     uint256 public burnNonce;
-    address burningAddress = 0x000000000000000000000000000000000000dEaD; // TODO: What address do we use here?
+    address burningAddress = 0x0;
 
     constructor(IERC20 _token) public {
         token = _token;

@@ -32,12 +32,12 @@ class CliSwapClient {
 
       signCmd = `${signCmd} > ${signedFile}`
       let signed;
-      await executeCommand(signCmd, function(result){
+      await this.executeCommand(signCmd, function(result){
           signed = result
       });
       if (signed) {
         //todo confirm properly signed and handle some edge cases
-        await executeCommand(`${this.chainClient} tx broadcast ${signedFile}`, function(result) {
+        await this.executeCommand(`${this.chainClient} tx broadcast ${signedFile}`, function(result) {
            return JSON.parse(result)
         });
       }
@@ -54,7 +54,7 @@ class CliSwapClient {
         signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
     }
 
-    await executeCommand(signCmd, function(signed){
+    await this.executeCommand(signCmd, function(signed){
         return signed
     });
   }
@@ -91,6 +91,9 @@ class CliSwapClient {
       if (stderr) {
         console.log(`stderr: ${stderr}`);
         return;
+      }
+      if (stdout.toLowerCase().includes("error")) {
+        throw new Error(stdout)
       }
       callback(JSON.parse(stdout));
     });

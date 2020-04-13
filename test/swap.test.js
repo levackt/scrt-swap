@@ -36,6 +36,9 @@ describe("EngSwap", () => {
     let accounts;
     let leader;
     let operators = [];
+    const recipient1 = 'enigma1um27s6ee62r8evnv7mz85fe4mz7yx6rkvzut0e'
+    
+    const tokenAmountToBurn = web3.utils.toBN(10);
     before(async () => {
         if (!deployedSwap || !deployedToken) {
             throw new Error('Deployed contract not found');
@@ -75,9 +78,8 @@ describe("EngSwap", () => {
     const receipts = [];
     it("...should burn funds.", async () => {
         for (let i = 1; i < 5; i++) {
-            const recipient = `enigma1${i}`;
+            const recipient = 'enigma1um27s6ee62r8evnv7mz85fe4mz7yx6rkvzut0e';
             const tokenDecimals = web3.utils.toBN(18);
-            const tokenAmountToBurn = web3.utils.toBN(10);
             const amount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
             console.log('Burning funds from', accounts[i], 'to', recipient);
             const approveTx = await tokenContract.methods.approve(deployedSwap.address, amount).send({from: accounts[i]});
@@ -143,6 +145,17 @@ describe("EngSwap", () => {
         // Using threshold of 2 for 3 operators should return a positive
         const unsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
         expect(unsignedSwaps.length).to.equal(nbSwaps);
+    });
+
+    it("...should mint one to one.", async () => {
+        const unsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
+        const tokenDecimals = web3.utils.toBN(8);
+        const amount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
+        for (const i in unsignedSwaps) {
+            const swap = unsignedSwaps[i].unsignedTx.value.msg[0].value;
+
+            expect(swap.AmountENG).to.equal(amount.toString());
+        }
     });
 
     it("...should broadcast successfully.", async () => {

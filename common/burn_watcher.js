@@ -1,5 +1,6 @@
 const Web3 = require('web3');
 const EngSwap = require("../client/src/contracts/EngSwap.json");
+const cosmos = require('cosmos-lib');
 
 /**
  * @typedef {Object} LogBurn
@@ -53,23 +54,42 @@ class BurnWatcher {
                 //convert eth wei units
                 const burnAmount = evt.returnValues['_amount'];
                 const cosmosDecimals = Web3.utils.toBN(8);
-                const amount = Web3.utils.toBN(Web3.utils.fromWei(burnAmount)).pow(cosmosDecimals).toString()
+
+                const amount = Web3.utils.toBN(Web3.utils.fromWei(burnAmount))
+                    .mul(Web3.utils.toBN(10).pow(cosmosDecimals)).toString();
                 
                 //todo validate cosmos address checksum                
                 const cosmosAddress = Web3.utils.hexToAscii(evt.returnValues['_to'])
-                const logBurn = {
-                    transactionHash: evt.transactionHash,
-                    from: Web3.utils.toChecksumAddress(evt.returnValues['_from']),
-                    amount: amount,
-                    to: cosmosAddress,
-                    nonce: evt.returnValues['_nonce'],
-                };
-                yield logBurn;
+                if (this.isValidCosmosAddress(cosmosAddress)) {
+                    const logBurn = {
+                        transactionHash: evt.transactionHash,
+                        from: Web3.utils.toChecksumAddress(evt.returnValues['_from']),
+                        amount: amount,
+                        to: cosmosAddress,
+                        nonce: evt.returnValues['_nonce'],
+                    };
+                    yield logBurn;
+                } else {
+                    console.error(`Invalid recipient: ${cosmosAddress}, transactionHash:${ evt.transactionHash}`);
+                }
             }
             await new Promise((resolve) => {
                 setTimeout(() => resolve(true), this.pollingInterval);
             })
         } while (this.watching);
+    }
+
+    /**
+     * Checksum the recipient address.
+     */
+    isValidCosmosAddress(recipient) {
+        try {
+            cosmos.address.getBytes32(recipient);
+            return true
+        } catch (error) {
+            console.error(error)
+        }
+        return false;
     }
 
     /**
