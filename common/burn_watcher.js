@@ -49,11 +49,19 @@ class BurnWatcher {
                 const blockPosition = evt.blockNumber;
                 // Always greater than 0 on mainnet
                 this.fromBlock = ((blockPosition > 0) ? blockPosition : 0) + 1;
+
+                //convert eth wei units
+                const burnAmount = evt.returnValues['_amount'];
+                const cosmosDecimals = Web3.utils.toBN(8);
+                const amount = Web3.utils.toBN(Web3.utils.fromWei(burnAmount)).pow(cosmosDecimals).toString()
+                
+                //todo validate cosmos address checksum                
+                const cosmosAddress = Web3.utils.hexToAscii(evt.returnValues['_to'])
                 const logBurn = {
                     transactionHash: evt.transactionHash,
-                    from: this.web3.utils.toChecksumAddress(evt.returnValues['_from']),
-                    to: this.web3.utils.hexToAscii(evt.returnValues['_to']), // The Cosmos chain address
-                    amount: evt.returnValues['_amount'], 
+                    from: Web3.utils.toChecksumAddress(evt.returnValues['_from']),
+                    amount: amount,
+                    to: cosmosAddress,
                     nonce: evt.returnValues['_nonce'],
                 };
                 yield logBurn;
