@@ -6,11 +6,10 @@ const {Leader} = require('./leader');
 const {Db} = require('./common/db');
 const {CliSwapClient} = require('./common/cli_swap_client')
 
-const ethHost = process.env.ETH_HOST || 'localhost';
-const ethPort = process.env.ETH_PORT || '8545';
 const networkId = process.env.NETWORK_ID || '50';
 const pollingInterval = process.env.POLLING_INTERVAL || 1000;
-const provider = new Web3.providers.HttpProvider('http://' + ethHost + ':' + ethPort);
+const ethProviderUrl = process.env.ETH_PROVIDER || 'http://localhost:8545';
+const provider = new Web3.providers.HttpProvider(ethProviderUrl);
 const fromBlock = 0; // TODO: Save to disk to resume after shutdown
 const multisigAddress = process.env.MULTISIG_ADDRESS || 'enigma12345';
 const keyringBackend = process.env.KEYRING_BACKEND || 'test';
