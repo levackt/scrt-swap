@@ -254,7 +254,7 @@ class App extends Component {
 
     await contract.methods
       .burnFunds(
-        Web3.utils.fromAscii(self.state.recipient),
+        Web3.utils.fromAscii(self.state.recipientAddress),
         swapAmountWei
       )
       .send({
