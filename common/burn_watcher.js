@@ -1,6 +1,7 @@
 const Web3 = require('web3');
 const EngSwap = require("../client/src/contracts/EngSwap.json");
 const cosmos = require('cosmos-lib');
+const prefix = process.env.BECH32_PREFIX || 'enigma';
 
 /**
  * @typedef {Object} LogBurn
@@ -82,6 +83,9 @@ class BurnWatcher {
      * Checksum the recipient address.
      */
     isValidCosmosAddress(recipient) {
+        if (!recipient || !recipient.startsWith(prefix)) {
+          return false;
+        }
         try {
             cosmos.address.getBytes32(recipient);
             return true

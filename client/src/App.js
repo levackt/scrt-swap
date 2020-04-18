@@ -80,6 +80,9 @@ class App extends Component {
 
       case "recipientAddress":
         errors.recipientAddress = "";
+        if (!value || !value.startsWith(prefix)) {
+          errors.recipientAddress = `Invalid prefix, expected ${prefix}`;
+        }
         try {
           const bytes32 = cosmos.address.getBytes32(value, prefix);
           this.setState({
