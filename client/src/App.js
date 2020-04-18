@@ -35,7 +35,6 @@ class App extends Component {
       tokenBalance: null,
       swapAmount: null,
       recipientAddress: null,
-      recipientAddressBytes: null,
       web3: null,
       accounts: null,
       contract: null,
@@ -86,8 +85,7 @@ class App extends Component {
         try {
           const bytes32 = cosmos.address.getBytes32(value, prefix);
           this.setState({
-            recipientAddress: value,
-            recipientAddressBytes: bytes32.toString("hex")
+            recipientAddress: value
           });
         } catch (error) {
           errors.recipientAddress = error.message;
@@ -232,7 +230,7 @@ class App extends Component {
 
     // Check if current allowance is sufficient, else approve
     if (parseInt(allowance) < parseInt(swapAmountWei)) {
-      self.setInfoMessage("Approve SCRT swap to transfer ENG");
+      self.setInfoMessage("Approve the ENG Swap contract to transfer ENG");
       const approveTx = await tokenContract.methods
         .approve(contractAddress, swapAmountWei)
         .send({
@@ -250,13 +248,14 @@ class App extends Component {
         self.setState({submitting: false});
         return;
       } else {
-        self.setInfoMessage("Transfer approved. Sign the burnFunds tx in Metamask");
+        self.setInfoMessage("Transfer approved. Sign the burnFunds tx");
       }
     }
 
     await contract.methods
+    web3.utils.fromAscii(recipient)
       .burnFunds(
-        Web3.utils.fromAscii(self.state.recipientAddressBytes),
+        Web3.utils.fromAscii(self.state.recipient),
         swapAmountWei
       )
       .send({
