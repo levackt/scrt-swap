@@ -1,0 +1,12 @@
+{
+  "ethereum_tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "ethereum_sender": "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
+  "receiver": "enigma1yuth8vrhemuu5m0ps0lv75yjhc9t86tf9hf83z",
+  "amount_uscrt": [
+    {
+      "denom": "uscrt",
+      "amount": "10"
+    }
+  ],
+  "done": true
+}

@@ -1,17 +1,28 @@
 var p1 = require('./data/p1.json');
 var unsignedTxData = require('./data/unsigned.json')
 var txData = require('./data/tx.json')
+var doneSwap = require('./data/done_swap.json')
 
 class MockTokenSwapClient {
 
+  async isSwapDone(ethTxHash) {
+    return this.getTokenSwap(ethTxHash).done
+  }
+
+  async getTokenSwap(ethTxHash) {
+    if (ethTxHash) {
+      return doneSwap;
+    }
+  }
+
   async broadcastTokenSwap(signatures, unsignedTx) {
     txData.txhash = Math.random().toString(16);
-    return txData
+    return txData;
   }
 
   async signTokenSwapRequest(unsignedTx) {
      p1.signature = Math.random().toString(16);
-     return p1
+     return p1;
   }
 
   generateTokenSwap(ethTxHash, senderEthAddress, amountTokens, recipientAddress) {

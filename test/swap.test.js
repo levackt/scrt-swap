@@ -156,17 +156,29 @@ describe("EngSwap", () => {
 
             expect(swap.AmountENG).to.equal(amount.toString());
         }
-    });
 
-    it("...should broadcast successfully.", async () => {
-        
+        // verify broadcast successfully
+
         (async () => {
             await leader.broadcastSignedSwaps();
         })();
         
         await sleep(1000);
         await leader.stopBroadcasting();
-        const unsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
-        expect(unsignedSwaps.length).to.equal(0);
+
+        const remainingUnsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
+        expect(remainingUnsignedSwaps.length).to.equal(0);
+
+        const client = new MockTokenSwapClient()
+        
+        // verify status of swaps
+        for (const i in unsignedSwaps) {
+            const swap = await db.fetchSwap(unsignedSwaps[i].transactionHash)
+            expect(swap.status).to.equal(1);
+            expect(swap.mintTransactionHash).to.not.be.empty;
+            expect(client.isSwapDone(swap.transactionHash));
+
+            //todo check account balance of recipient before and after
+        }
     });
 });

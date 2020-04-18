@@ -58,7 +58,6 @@ class BurnWatcher {
                 const amount = Web3.utils.toBN(Web3.utils.fromWei(burnAmount))
                     .mul(Web3.utils.toBN(10).pow(cosmosDecimals)).toString();
                 
-                //todo validate cosmos address checksum                
                 const cosmosAddress = Web3.utils.hexToAscii(evt.returnValues['_to'])
                 if (this.isValidCosmosAddress(cosmosAddress)) {
                     const logBurn = {

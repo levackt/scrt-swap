@@ -65,9 +65,7 @@ class Leader {
                     signedSwaps[swap].signatures, 
                     signedSwaps[swap].unsignedTx
                 );
-                if (result.txhash) {
-                    //todo confirm tx
-                    console.log("completing swap")
+                if (result.txhash && this.tokenSwapClient.isSwapDone(result.txhash)) {
                     await this.db.completeSwap(signedSwaps[swap].transactionHash, result.txhash);
                 } else {
                     console.error(`broadcastSignedSwaps result: ${result}`)
@@ -105,6 +103,7 @@ class Leader {
                 await this.db.insertUnsignedSwap(unsignedSwap);
             } catch (e) {
                 console.error('Cannot create unsigned tx', logBurn, e);
+                //todo query tx hash in tokenswap and update status
             }
         }
     }

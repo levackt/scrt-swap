@@ -18,6 +18,16 @@ class CliSwapClient {
       this.multisigAddress = multisigAddress;
   }
 
+  async isSwapDone(ethTxHash) {
+    return this.getTokenSwap(ethTxHash).done
+  }
+
+  async getTokenSwap(ethTxHash) {
+    await this.executeCommand(`${this.chainClient} query tokenswap get ${ethTxHash}`, function(result) {
+        return JSON.parse(result)
+    });
+  }
+
   async broadcastTokenSwap(signatures, unsignedTx) {
       
       var unsignedFile = temp.path()
@@ -36,7 +46,6 @@ class CliSwapClient {
           signed = result
       });
       if (signed) {
-        //todo confirm properly signed and handle some edge cases
         await this.executeCommand(`${this.chainClient} tx broadcast ${signedFile}`, function(result) {
            return JSON.parse(result)
         });
@@ -54,7 +63,7 @@ class CliSwapClient {
         signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
     }
 
-    await this.executeCommand(signCmd, function(signed){
+    await this.executeCommand(signCmd, function(signed) {
         return signed
     });
   }
@@ -69,7 +78,6 @@ class CliSwapClient {
    */
   async generateTokenSwap(ethTxHash, senderEthAddress, amountTokens, recipientAddress) {
     let createTxCmd = `${this.chainClient} tx tokenswap create ${ethTxHash} ${senderEthAddress} ${amountTokens} ${recipientAddress} --from=${this.multisigAddress} --generate-only`;
-// todo lint
     if (this.keyringBackend) {
       createTxCmd = `${createTxCmd} --keyring-backend ${this.keyringBackend}`;
     }
