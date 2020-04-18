@@ -253,7 +253,6 @@ class App extends Component {
     }
 
     await contract.methods
-    web3.utils.fromAscii(recipient)
       .burnFunds(
         Web3.utils.fromAscii(self.state.recipient),
         swapAmountWei
