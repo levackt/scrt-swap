@@ -32,7 +32,7 @@ class CliSwapClient {
       
       var unsignedFile = temp.path()
       let signCmd = `${this.chainClient} tx multisign ${unsignedFile} ${this.multisigAddress} --yes`
-      fs.writeFileSync(unsignedFile, unsignedTx);
+      fs.writeFileSync(unsignedFile, JSON.stringify(unsignedTx));
       for (const signature in signatures) {
         var tempName = temp.path();
         fs.writeFileSync(tempName, JSON.stringify(signature));
