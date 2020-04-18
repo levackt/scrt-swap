@@ -36,7 +36,7 @@ describe("EngSwap", () => {
     let accounts;
     let leader;
     let operators = [];
-    const recipient1 = 'enigma1um27s6ee62r8evnv7mz85fe4mz7yx6rkvzut0e'
+    const recipient = 'enigma1um27s6ee62r8evnv7mz85fe4mz7yx6rkvzut0e'
     
     const tokenAmountToBurn = web3.utils.toBN(10);
     before(async () => {
@@ -47,8 +47,8 @@ describe("EngSwap", () => {
         await db.clear(SWAP_COLLECTION);
         await db.clear(SIGNATURE_COLLECTION);
         const fromBlock = await web3.eth.getBlockNumber();
-        leader = new Leader(new MockTokenSwapClient(), multisigAddress, db, provider, networkId, fromBlock, 
-            pollingInterval, multisigThreshold, broadcastInterval);
+        leader = new Leader(new MockTokenSwapClient(), multisigAddress, db, provider, networkId, 
+            fromBlock, pollingInterval, multisigThreshold, broadcastInterval);
         swapContract = new web3.eth.Contract(
             EngSwap.abi,
             deployedSwap.address,
@@ -70,7 +70,9 @@ describe("EngSwap", () => {
         }
         for (let i = 0; i < 3; i++) {
             const user = `operator${i}`;
-            const operator = new Operator(new MockTokenSwapClient(), user, multisigAddress, db, provider, networkId, parseInt(nbConfirmations), fromBlock);
+            const operator = new Operator(new MockTokenSwapClient(), user, multisigAddress, db, provider, networkId, 
+            "todo leader pubkey",
+            parseInt(nbConfirmations), fromBlock);
             operators.push(operator);
         }
     });
@@ -78,7 +80,6 @@ describe("EngSwap", () => {
     const receipts = [];
     it("...should burn funds.", async () => {
         for (let i = 1; i < 5; i++) {
-            const recipient = 'enigma1um27s6ee62r8evnv7mz85fe4mz7yx6rkvzut0e';
             const tokenDecimals = web3.utils.toBN(18);
             const amount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
             console.log('Burning funds from', accounts[i], 'to', recipient);

@@ -10,17 +10,20 @@ class Operator {
      * @param {string} multisig - The multisig address
      * @param provider
      * @param networkId
+     * @param leaderAccount Required to verify swap was created by leader.
      * @param nbConfirmation
      * @param fromBlock
      * @param pollingInterval
      */
-    constructor(tokenSwapClient, user, multisig, db, provider, networkId, nbConfirmation = 12,
+    constructor(tokenSwapClient, user, multisig, db, provider, networkId, 
+                leaderAccount, nbConfirmation = 12,
                 fromBlock = 0, pollingInterval = 30000) {
         this.user = user;
         this.multisig = multisig;
         this.burnWatcher = new BurnWatcher(provider, networkId, nbConfirmation, fromBlock, pollingInterval);
         this.db = db;
         this.tokenSwapClient = tokenSwapClient;
+        this.leaderAccount = leaderAccount;
     }
 
     async run() {
@@ -37,8 +40,9 @@ class Operator {
                 //todo shutdown until leader is up again?
             }
             if (unsignedTx) {
+                //todo WIP: verify this.leaderAccount signed logBurn
                 try {
-                    const signature = await this.tokenSwapClient.signTokenSwapRequest(unsignedTx);
+                    const signature = await this.tokenSwapClient.signTx(unsignedTx);
                     await this.db.insertSignature(this.user, transactionHash, signature);
                     console.log(`signed tx hash ${transactionHash}`);                    
                 } catch (e) {

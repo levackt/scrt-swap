@@ -87,8 +87,8 @@ class Leader {
                     logBurn.to
                 );
 
-                // Sign the tx so any thresholder can verify and broadcast, though broadcasting is restricted to leader for now
-                const leaderSignature = await this.tokenSwapClient.signTokenSwapRequest(unsignedTx);
+                // Sign the tx so any operator can verify
+                const leaderSignature = await this.tokenSwapClient.signTx(logBurn);
                 
                 /** @type Swap */
                 const unsignedSwap = {

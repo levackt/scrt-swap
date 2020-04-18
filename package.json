@@ -9,6 +9,7 @@
     "cosmos-lib": "^1.1.0",
     "dotenv": "^8.2.0",
     "dotenv-defaults": "^1.1.1",
+    "dotenv-expand": "^5.1.0",
     "mongodb": "^3.3.5",
     "temp": "^0.9.1",
     "web3": "^1.2.6"

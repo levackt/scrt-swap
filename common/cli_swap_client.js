@@ -52,7 +52,7 @@ class CliSwapClient {
       }
   }
 
-  async signTokenSwapRequest(unsignedTx) {
+  async signTx(unsignedTx) {
 
     var unsignedFile = temp.path()
     fs.writeFileSync(unsignedFile, unsignedTx);
@@ -90,6 +90,8 @@ class CliSwapClient {
   }
 
   async executeCommand(cmd, callback) {
+
+    // todo timeout
     console.log(`Executing cmd : ${cmd} --output json`);
     exec(`${cmd} --output json`, (error, stdout, stderr) => {
       if (error) {

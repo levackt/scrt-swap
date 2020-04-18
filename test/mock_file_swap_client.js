@@ -20,7 +20,7 @@ class MockTokenSwapClient {
     return txData;
   }
 
-  async signTokenSwapRequest(unsignedTx) {
+  async signTx(unsignedTx) {
      p1.signature = Math.random().toString(16);
      return p1;
   }
