@@ -88,7 +88,7 @@ class Leader {
                 );
 
                 // Sign the tx so any operator can verify
-                const leaderSignature = await this.tokenSwapClient.signTx(JSON.stringify(logBurn));
+                const leaderSignature = await this.tokenSwapClient.signTx(logBurn);
                 
                 /** @type Swap */
                 const unsignedSwap = {
