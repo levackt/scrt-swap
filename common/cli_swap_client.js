@@ -55,7 +55,7 @@ class CliSwapClient {
   async signTx(unsignedTx) {
 
     var unsignedFile = temp.path()
-    fs.writeFileSync(unsignedFile, unsignedTx);
+    fs.writeFileSync(unsignedFile, JSON.stringify(unsignedTx));
 
     let signCmd = `${this.chainClient} tx sign ${unsignedFile} --from=${this.fromAccount} --yes`;
 
