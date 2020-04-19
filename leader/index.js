@@ -101,9 +101,6 @@ class Leader {
                         logBurn.amount, 
                         logBurn.to
                     );
-
-                    // Sign the tx so any operator can verify
-                    const leaderSignature = await this.tokenSwapClient.signTx(logBurn);
                     
                     /** @type Swap */
                     const unsignedSwap = {
@@ -111,8 +108,7 @@ class Leader {
                         _id: logBurn.transactionHash,
                         mintTransactionHash: null,
                         unsignedTx,
-                        status: SWAP_STATUS_UNSIGNED,
-                        leaderSignature
+                        status: SWAP_STATUS_UNSIGNED
                     };
                     console.log('Storing unsigned swap', logBurn);
                     await this.db.insertUnsignedSwap(unsignedSwap);
