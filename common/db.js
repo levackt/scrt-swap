@@ -82,7 +82,8 @@ class Db {
      * @param status - blockchain status
      */
     async updateSwapStatus (transactionHash, mintTransactionHash, status) {
-        console.log(`updating swap ethTxHash=${transactionHash}, mintTransactionHash=${mintTransactionHash}, status=${status}`);
+        logger.info(`updating swap ethTxHash=${transactionHash}, mintTransactionHash=${mintTransactionHash}, \
+        status=${status}`);
         if (!(mintTransactionHash && status)) {
             return;
         } if (!status >= SWAP_STATUS_SIGNED && status <= SWAP_STATUS_CONFIRMED) {
@@ -125,7 +126,7 @@ class Db {
     async findAboveThresholdUnsignedSwaps (threshold) {
         const unsignedSwaps = await this.findAllByStatus(SWAP_STATUS_UNSIGNED);
         const aboveThresholdUnsignedSwaps = [];
-        for (const swap of unsignedSwaps) {
+        await Promise.all(unsignedSwaps.map(async (swap) => {
             const { transactionHash, unsignedTx, status } = swap;
             // TODO: Consider indexing this field
             const query = { transactionHash: swap.transactionHash };
@@ -140,7 +141,7 @@ class Db {
                     signatures
                 });
             }
-        }
+        }));
         return aboveThresholdUnsignedSwaps;
     }
 }

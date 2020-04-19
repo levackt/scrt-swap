@@ -2,8 +2,6 @@ const { sleep } = require('../common/utils');
 const logger = require('../common/logger');
 const { BurnWatcher } = require('../common/burn_watcher');
 const { SWAP_STATUS_UNSIGNED } = require('../common/constants');
-// eslint-disable-next-line no-unused-vars
-const { CliSwapClient } = require('../common/cli_swap_client');
 
 class Operator {
     /**
@@ -48,9 +46,8 @@ class Operator {
                     logger.info(`Skipping signing ethTxHash=${transactionHash}`);
                 }
             } catch (e) {
-                // eslint-disable-next-line max-len
                 // If this happens, skipped LogBurn will have to be re-processed either by resetting fromBlock or manually
-                logger.error('The operator found a LogBurn event unregistered by the Leader. Is the leader running.');
+                logger.error(`The operator found a LogBurn event unregistered by the Leader. Is the leader running? ${e}`);
                 // todo shutdown until leader is up again?
                 // just putting it to sleep for now
                 await sleep(this.pollingInterval);

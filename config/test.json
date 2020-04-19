@@ -2,7 +2,7 @@
   "networkId": "4",
   "ethProviderUrl": "http://localhost:8545",
   "multisigAddress": "kamut1n4pc2w3us9n4axa0ppadd3kv3c0sar8cgwpte2",
-  "db_url": "http://localhost:27017",
+  "db_url": "mongodb+srv://<username>:<password>@kamut-swap-udl9b.mongodb.net/test?retryWrites=true&w=majority",
   "chainClient": "kamutcli",
   "fromAccount": "",
   "nbConfirmations": "2",

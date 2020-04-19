@@ -1,4 +1,5 @@
 const logger = require('../common/logger');
+const { sleep } = require('../common/utils');
 const { BurnWatcher } = require('../common/burn_watcher');
 const { SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_CONFIRMED } = require('../common/constants');
 
@@ -13,7 +14,7 @@ const { SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_CONFIRMED } = r
  * @property {string | null} mintTransactionHash - The Enigma Chain mint transaction hash
  * @property {string} unsignedTx - The unsigned transaction encoded in JSON
  * @property {number} status - 0=Unsigned; 1=Signed; 2=Submitted; 3=Confirmed
- * @param {TokenSwapClient} tokenSwapClient - Implements token swap operations.
+ * @param {CliSwapClient} tokenSwapClient - Implements token swap operations.
  */
 
 /**
@@ -33,7 +34,7 @@ class Leader {
      * `enigmacli keys add --multisig=name1,name2,name3[...] --multisig-threshold=K new_key_name`
      *
      * @param {string} multisig - The multisig address
-     * @param {TokenSwapClient} tokenSwapClient - Implements token swap operations.
+     * @param {CliSwapClient} tokenSwapClient - Implements token swap operations.
      * @param {Db} db
      * @param provider
      * @param networkId
@@ -63,7 +64,7 @@ class Leader {
         do {
             const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold);
             logger.info(`Found ${signedSwaps.length} swaps`);
-            for (const swap in signedSwaps) {
+            for (const swap of signedSwaps) {
                 const result = await this.tokenSwapClient.broadcastTokenSwap(
                     signedSwaps[swap].signatures,
                     signedSwaps[swap].unsignedTx
@@ -76,16 +77,13 @@ class Leader {
             }
 
             const submittedTxs = await this.db.findAllByStatus(SWAP_STATUS_SUBMITTED);
-            for (const i in submittedTxs) {
-                const swap = submittedTxs[i];
+            for (const swap of submittedTxs) {
                 if (this.tokenSwapClient.isSwapDone(swap.transactionHash)) {
                     await this.db.updateSwapStatus(swap.transactionHash, swap.mintTransactionHash, SWAP_STATUS_CONFIRMED);
                 }
             }
 
-            await new Promise((resolve) => {
-                setTimeout(() => resolve(true), this.broadcastInterval);
-            });
+            await sleep(this.broadcastInterval);
         } while (this.broadcasting);
     }
 
