@@ -72,7 +72,6 @@ describe("EngSwap", () => {
         for (let i = 0; i < 3; i++) {
             const user = `operator${i}`;
             const operator = new Operator(new MockTokenSwapClient(), user, multisigAddress, db, provider, networkId, 
-            "todo leader pubkey",
             parseInt(nbConfirmations), fromBlock);
             operators.push(operator);
         }
@@ -180,7 +179,10 @@ describe("EngSwap", () => {
             expect(swap.mintTransactionHash).to.not.be.empty;
             expect(client.isSwapDone(swap.transactionHash));
 
-            //todo check account balance of recipient before and after
+            const mintTx = await client.getTokenSwap(swap.transactionHash);
+            expect(mintTx).to.not.be.empty;
+            // todo check conversion in integ test, this only checks sample
+            expect(mintTx.amount_uscrt[0].amount).to.equal('10');
         }
     });
 });
