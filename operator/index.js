@@ -1,4 +1,5 @@
 const {BurnWatcher} = require('../common/burn_watcher');
+const { SWAP_STATUS_UNSIGNED } = require('../common/constants');
 
 class Operator {
     /**
@@ -30,23 +31,26 @@ class Operator {
         for await (let logBurn of this.burnWatcher.watchBurnLog()) {
             console.log('Operator', this.user, 'found LogBurn event', logBurn);
             const {transactionHash} = logBurn;
-            let unsignedTx = null;
+            let swap = null;
             try {
-                unsignedTx = await this.db.fetchUnsignedTx(transactionHash);
-                console.log('Found unsigned tx to sign', unsignedTx);
+                swap = await this.db.fetchSwap(transactionHash);
+                console.log('Found swap', swap);
             } catch (e) {
                 // If this happens, skipped LogBurn will have to be re-processed either by resetting fromBlock or manually
                 console.error('The operator found a LogBurn event unregistered by the Leader. Is the leader running.')
                 //todo shutdown until leader is up again?
             }
-            if (unsignedTx) {
-                //todo WIP: verify this.leaderAccount signed logBurn
-                try {
-                    const signature = await this.tokenSwapClient.signTx(unsignedTx);
-                    await this.db.insertSignature(this.user, transactionHash, signature);
-                    console.log(`signed tx hash ${transactionHash}`);                    
-                } catch (e) {
-                    console.error('Cannot sign unsigned tx', unsignedTx, logBurn, e);
+            if (swap) {
+                if (swap.status == SWAP_STATUS_UNSIGNED) {
+                    try {
+                        const signature = await this.tokenSwapClient.signTx(swap.unsignedTx);
+                        await this.db.insertSignature(this.user, transactionHash, signature);
+                        console.log(`signed tx hash ${transactionHash}`);
+                    } catch (e) {
+                        console.error('Cannot sign unsigned tx', swap.unsignedTx, logBurn, e);
+                    }
+                } else {
+                    console.log(`Skipping signing ethTxHash=${transactionHash}`);
                 }
             }
         }

@@ -79,7 +79,6 @@ class Leader {
                 if (this.tokenSwapClient.isSwapDone(swap.transactionHash)) {
                     await this.db.updateSwapStatus(swap.transactionHash, swap.mintTransactionHash, SWAP_STATUS_CONFIRMED);
                 }
-                //todo testing for edge cases to set status to retry broadcast
             }
 
             await new Promise((resolve) => {
@@ -91,30 +90,35 @@ class Leader {
     async run() {
         for await (let logBurn of this.burnWatcher.watchBurnLog()) {
             try {
-                const unsignedTx = this.tokenSwapClient.generateTokenSwap(
-                    logBurn.transactionHash, 
-                    logBurn.from, 
-                    logBurn.amount, 
-                    logBurn.to
-                );
+                const dbSwap = await this.db.fetchSwap(logBurn.transactionHash);
 
-                // Sign the tx so any operator can verify
-                const leaderSignature = await this.tokenSwapClient.signTx(logBurn);
-                
-                /** @type Swap */
-                const unsignedSwap = {
-                    ...logBurn,
-                    _id: logBurn.transactionHash,
-                    mintTransactionHash: null,
-                    unsignedTx,
-                    status: SWAP_STATUS_UNSIGNED,
-                    leaderSignature
-                };
-                console.log('Storing unsigned swap', logBurn);
-                await this.db.insertUnsignedSwap(unsignedSwap);
+                if (dbSwap) {
+                    console.log('Swap already exists for ethTxHash=', logBurn.transactionHash)
+                } else {
+                    const unsignedTx = this.tokenSwapClient.generateTokenSwap(
+                        logBurn.transactionHash, 
+                        logBurn.from, 
+                        logBurn.amount, 
+                        logBurn.to
+                    );
+
+                    // Sign the tx so any operator can verify
+                    const leaderSignature = await this.tokenSwapClient.signTx(logBurn);
+                    
+                    /** @type Swap */
+                    const unsignedSwap = {
+                        ...logBurn,
+                        _id: logBurn.transactionHash,
+                        mintTransactionHash: null,
+                        unsignedTx,
+                        status: SWAP_STATUS_UNSIGNED,
+                        leaderSignature
+                    };
+                    console.log('Storing unsigned swap', logBurn);
+                    await this.db.insertUnsignedSwap(unsignedSwap);
+                }
             } catch (e) {
                 console.error('Cannot create unsigned tx', logBurn, e);
-                //todo query tx hash in tokenswap and update status
             }
         }
     }

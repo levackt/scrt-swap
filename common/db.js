@@ -57,21 +57,11 @@ class Db {
     async fetchSwap(transactionHash) {
         const query = {_id: transactionHash};
         const swap = await this.db.collection(SWAP_COLLECTION).findOne(query);
-        swap.amount = Web3.utils.toBN(swap.amount);
-        swap.nonce = Web3.utils.toBN(swap.nonce);
+        if (swap) {
+            swap.amount = Web3.utils.toBN(swap.amount);
+            swap.nonce = Web3.utils.toBN(swap.nonce);
+        }
         return swap;
-    }
-
-    /**
-     * Fetch the specified unsigned tx encoded in JSON
-     *
-     * @param {string} transactionHash
-     * @returns {Promise<string>}
-     */
-    async fetchUnsignedTx(transactionHash) {
-        const query = {_id: transactionHash};
-        const swap = await this.db.collection(SWAP_COLLECTION).findOne(query);
-        return swap.unsignedTx;
     }
 
     /**
