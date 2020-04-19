@@ -1,5 +1,6 @@
-const {BurnWatcher} = require('../common/burn_watcher');
-const { SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_CONFIRMED} = require('../common/constants');
+const logger = require('../common/logger');
+const { BurnWatcher } = require('../common/burn_watcher');
+const { SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_CONFIRMED } = require('../common/constants');
 
 /**
  * @typedef {Object} Swap
@@ -39,8 +40,9 @@ class Leader {
      * @param fromBlock
      * @param pollingInterval
      * @param multisigThreshold Minimum number of signatures to broadcast tx
+     * @param broadcastInterval
      */
-    constructor(tokenSwapClient, multisig, db, provider, networkId, fromBlock = 0, pollingInterval = 30000, 
+    constructor (tokenSwapClient, multisig, db, provider, networkId, fromBlock = 0, pollingInterval = 30000,
         multisigThreshold = 2, broadcastInterval = 1000) {
         this.multisig = multisig;
         this.multisigThreshold = multisigThreshold;
@@ -51,28 +53,28 @@ class Leader {
         this.broadcasting = false;
     }
 
-    stopBroadcasting() {
+    stopBroadcasting () {
         this.broadcasting = false;
     }
 
-    async broadcastSignedSwaps() {
-        console.log('Watching for signed swaps');
+    async broadcastSignedSwaps () {
+        logger.info('Watching for signed swaps');
         this.broadcasting = true;
         do {
             const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold);
-            console.log(`Found ${signedSwaps.length} swaps`)
+            logger.info(`Found ${signedSwaps.length} swaps`);
             for (const swap in signedSwaps) {
                 const result = await this.tokenSwapClient.broadcastTokenSwap(
-                    signedSwaps[swap].signatures, 
+                    signedSwaps[swap].signatures,
                     signedSwaps[swap].unsignedTx
                 );
                 if (result.txhash) {
                     await this.db.updateSwapStatus(signedSwaps[swap].transactionHash, result.txhash, SWAP_STATUS_SUBMITTED);
                 } else {
-                    console.error(`broadcastSignedSwaps result: ${result}`)
+                    logger.error(`broadcastSignedSwaps result: ${result}`);
                 }
             }
-            
+
             const submittedTxs = await this.db.findAllByStatus(SWAP_STATUS_SUBMITTED);
             for (const i in submittedTxs) {
                 const swap = submittedTxs[i];
@@ -83,25 +85,25 @@ class Leader {
 
             await new Promise((resolve) => {
                 setTimeout(() => resolve(true), this.broadcastInterval);
-            })
+            });
         } while (this.broadcasting);
     }
 
-    async run() {
-        for await (let logBurn of this.burnWatcher.watchBurnLog()) {
+    async run () {
+        for await (const logBurn of this.burnWatcher.watchBurnLog()) {
             try {
                 const dbSwap = await this.db.fetchSwap(logBurn.transactionHash);
 
                 if (dbSwap) {
-                    console.log('Swap already exists for ethTxHash=', logBurn.transactionHash)
+                    logger.error('Swap already exists for ethTxHash=', logBurn.transactionHash);
                 } else {
                     const unsignedTx = await this.tokenSwapClient.generateTokenSwap(
-                        logBurn.transactionHash, 
-                        logBurn.from, 
-                        logBurn.amount, 
+                        logBurn.transactionHash,
+                        logBurn.from,
+                        logBurn.amount,
                         logBurn.to
                     );
-                    
+
                     /** @type Swap */
                     const unsignedSwap = {
                         ...logBurn,
@@ -110,14 +112,14 @@ class Leader {
                         unsignedTx,
                         status: SWAP_STATUS_UNSIGNED
                     };
-                    console.log('Storing unsigned swap', logBurn);
+                    logger.info('Storing unsigned swap', logBurn);
                     await this.db.insertUnsignedSwap(unsignedSwap);
                 }
             } catch (e) {
-                console.error('Cannot create unsigned tx', logBurn, e);
+                logger.error('Cannot create unsigned tx', logBurn, e);
             }
         }
     }
 }
 
-module.exports = {Leader};
+module.exports = { Leader };

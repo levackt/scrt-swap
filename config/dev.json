@@ -1,0 +1,15 @@
+{
+  "networkId": "50",
+  "pollingInterval": 1000,
+  "ethProviderUrl": "http://localhost:8545",
+  "multisigAddress": "enigma12345",
+  "keyringBackend": "test",
+  "db_url": "mongodb://localhost:27017",
+  "chainClient": "enigmacli",
+  "fromAccount": "",
+  "broadcastInterval": 30000,
+  "nbConfirmations": "12",
+  "multisigThreshold": "2",
+  "user": "operator1",
+  "dbName": "enigma-swap"
+}

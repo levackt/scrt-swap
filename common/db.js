@@ -1,32 +1,35 @@
-const {MongoClient} = require('mongodb');
+const logger = require('../common/logger');
+const { MongoClient } = require('mongodb');
 const Web3 = require('web3');
-const { SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_SIGNED, SWAP_STATUS_CONFIRMED} = require('./constants');
+const {
+    SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_SIGNED, SWAP_STATUS_CONFIRMED
+} = require('./constants');
 
 const SWAP_COLLECTION = 'swap';
 const SIGNATURE_COLLECTION = 'signature';
 
 class Db {
-    constructor(url, dbName) {
+    constructor (url, dbName) {
         this.url = url;
         this.dbName = dbName;
     }
 
-    async init() {
-        this.client = await MongoClient.connect(this.url);
+    async init () {
+        this.client = await MongoClient.connect(this.url, { useUnifiedTopology: true });
         this.db = this.client.db(this.dbName);
     }
 
-    async teardown() {
+    async teardown () {
         if (!this.client) {
             throw new Error('No Mongo client, accountant not initialized');
         }
-        console.log('Closing db connection');
+        logger.info('Closing db connection');
         return this.client.close();
     }
 
-    async clear(collection) {
+    async clear (collection) {
         await this.db.collection(collection).deleteMany({});
-        console.log('Deleted all rows', collection);
+        logger.info('Deleted all rows', collection);
     }
 
     /**
@@ -34,24 +37,26 @@ class Db {
      *
      * @param {Swap} unsignedSwap
      */
-    async insertUnsignedSwap(unsignedSwap) {
-        if (!(unsignedSwap && 
+    async insertUnsignedSwap (unsignedSwap) {
+        if (!(unsignedSwap &&
             unsignedSwap.unsignedTx &&
             unsignedSwap.unsignedTx.value &&
-            unsignedSwap.transactionHash && 
-            unsignedSwap.status == SWAP_STATUS_UNSIGNED)) {
-            throw new Error("Invalid unsigned swap")
+            unsignedSwap.transactionHash &&
+            unsignedSwap.status === SWAP_STATUS_UNSIGNED)) {
+            throw new Error('Invalid unsigned swap');
         }
         const record = {
             ...unsignedSwap,
             amount: unsignedSwap.amount.toString(),
-            nonce: unsignedSwap.amount.toString(),
+            nonce: unsignedSwap.amount.toString()
         };
         this.db.collection(SWAP_COLLECTION).insertOne(record);
     }
 
-    async insertSignature(user, transactionHash, signature) {
-        const record = {_id: signature.signature, user, transactionHash, signature};
+    async insertSignature (user, transactionHash, signature) {
+        const record = {
+            _id: signature.signature, user, transactionHash, signature
+        };
         this.db.collection(SIGNATURE_COLLECTION).insertOne(record);
     }
 
@@ -61,8 +66,8 @@ class Db {
      * @param {string} transactionHash
      * @returns {Promise<Swap>}
      */
-    async fetchSwap(transactionHash) {
-        const query = {_id: transactionHash};
+    async fetchSwap (transactionHash) {
+        const query = { _id: transactionHash };
         const swap = await this.db.collection(SWAP_COLLECTION).findOne(query);
         if (swap) {
             swap.amount = Web3.utils.toBN(swap.amount);
@@ -76,20 +81,22 @@ class Db {
      * @param mintTransactionHash - The Enigma Chain mint transaction hash
      * @param status - blockchain status
      */
-    async updateSwapStatus(transactionHash, mintTransactionHash, status) {
-        console.log(`updating swap ethTxHash=${transactionHash}, mintTransactionHash=${mintTransactionHash}, status=${status}`)
+    async updateSwapStatus (transactionHash, mintTransactionHash, status) {
+        console.log(`updating swap ethTxHash=${transactionHash}, mintTransactionHash=${mintTransactionHash}, status=${status}`);
         if (!(mintTransactionHash && status)) {
-            return
-        } else if (!status >= SWAP_STATUS_SIGNED && status <= SWAP_STATUS_CONFIRMED) {
-            throw new Error("Invalid status")
+            return;
+        } if (!status >= SWAP_STATUS_SIGNED && status <= SWAP_STATUS_CONFIRMED) {
+            throw new Error('Invalid status');
         }
 
-        const query = {_id: transactionHash};
-        
-        var values = { $set: {status: status, mintTransactionHash: mintTransactionHash } };
-        this.db.collection(SWAP_COLLECTION).updateOne(query, values, function(err, res) {
-            if (err) throw err;
-            console.log(`Updates transactionHash=${transactionHash}`);
+        const query = { _id: transactionHash };
+
+        const values = { $set: { status, mintTransactionHash } };
+        this.db.collection(SWAP_COLLECTION).updateOne(query, values, (err, res) => {
+            if (err) {
+                throw err;
+            }
+            logger.info(`Updates transactionHash=${transactionHash}`);
         });
     }
 
@@ -98,8 +105,8 @@ class Db {
      *
      * @returns {Promise<Array<Swap>>}
      */
-    async findAllByStatus(status) {
-        const query = {status: status};
+    async findAllByStatus (status) {
+        const query = { status };
         const result = await this.db.collection(SWAP_COLLECTION).find(query);
         const swaps = await result.toArray();
         for (const swap of swaps) {
@@ -115,13 +122,13 @@ class Db {
      * @param {number} threshold
      * @returns {Promise<Array<AboveThresholdUnsignedSwap>>}
      */
-    async findAboveThresholdUnsignedSwaps(threshold) {
+    async findAboveThresholdUnsignedSwaps (threshold) {
         const unsignedSwaps = await this.findAllByStatus(SWAP_STATUS_UNSIGNED);
         const aboveThresholdUnsignedSwaps = [];
         for (const swap of unsignedSwaps) {
-            const {transactionHash, unsignedTx, status} = swap;
+            const { transactionHash, unsignedTx, status } = swap;
             // TODO: Consider indexing this field
-            const query = {transactionHash: swap.transactionHash};
+            const query = { transactionHash: swap.transactionHash };
             // Slightly inefficient to fetch results instead on counting, but saves us from querying twice
             const result = await this.db.collection(SIGNATURE_COLLECTION).find(query);
             const signatures = await result.toArray();
@@ -130,7 +137,7 @@ class Db {
                     transactionHash,
                     unsignedTx,
                     status,
-                    signatures,
+                    signatures
                 });
             }
         }
@@ -138,4 +145,4 @@ class Db {
     }
 }
 
-module.exports = {Db, SWAP_COLLECTION, SIGNATURE_COLLECTION};
+module.exports = { Db, SWAP_COLLECTION, SIGNATURE_COLLECTION };
