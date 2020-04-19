@@ -1,4 +1,5 @@
 const {BurnWatcher} = require('../common/burn_watcher');
+const { SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_CONFIRMED} = require('../common/constants');
 
 /**
  * @typedef {Object} Swap
@@ -65,12 +66,22 @@ class Leader {
                     signedSwaps[swap].signatures, 
                     signedSwaps[swap].unsignedTx
                 );
-                if (result.txhash && this.tokenSwapClient.isSwapDone(result.txhash)) {
-                    await this.db.completeSwap(signedSwaps[swap].transactionHash, result.txhash);
+                if (result.txhash) {
+                    await this.db.updateSwapStatus(signedSwaps[swap].transactionHash, result.txhash, SWAP_STATUS_SUBMITTED);
                 } else {
                     console.error(`broadcastSignedSwaps result: ${result}`)
                 }
             }
+            
+            const submittedTxs = await this.db.findAllByStatus(SWAP_STATUS_SUBMITTED);
+            for (const i in submittedTxs) {
+                const swap = submittedTxs[i];
+                if (this.tokenSwapClient.isSwapDone(swap.transactionHash)) {
+                    await this.db.updateSwapStatus(swap.transactionHash, swap.mintTransactionHash, SWAP_STATUS_CONFIRMED);
+                }
+                //todo testing for edge cases to set status to retry broadcast
+            }
+
             await new Promise((resolve) => {
                 setTimeout(() => resolve(true), this.broadcastInterval);
             })
@@ -96,7 +107,7 @@ class Leader {
                     _id: logBurn.transactionHash,
                     mintTransactionHash: null,
                     unsignedTx,
-                    status: 0,
+                    status: SWAP_STATUS_UNSIGNED,
                     leaderSignature
                 };
                 console.log('Storing unsigned swap', logBurn);
