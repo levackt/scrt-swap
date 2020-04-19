@@ -19,12 +19,16 @@ class CliSwapClient {
   }
 
   async isSwapDone(ethTxHash) {
-    return this.getTokenSwap(ethTxHash).done
+    const tokenSwap = this.getTokenSwap(ethTxHash);
+    if (tokenSwap.length === 0 || tokenSwap.includes("ERROR")) {
+      return false;
+    }
+    return JSON.parse(tokenSwap).done
   }
 
   async getTokenSwap(ethTxHash) {
     await this.executeCommand(`${this.chainClient} query tokenswap get ${ethTxHash}`, function(result) {
-        return JSON.parse(result)
+        return result;
     });
   }
 

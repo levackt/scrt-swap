@@ -9,6 +9,7 @@ const EngSwap = require("../client/src/contracts/EngSwap.json");
 const EngToken = require("../client/src/contracts/EngToken.json");
 const {expect} = require('chai');
 const {mineBlock} = require('../common/ganache');
+const { SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_CONFIRMED} = require('../common/constants');
 
 async function sleep(ms) {
     await new Promise(resolve => {
@@ -105,7 +106,7 @@ describe("EngSwap", () => {
 
     let nbSwaps;
     it("...should have one unsigned swap record in the database per LogBurn receipt emitted.", async () => {
-        const unsignedSwaps = await db.findAllUnsignedSwaps();
+        const unsignedSwaps = await db.findAllByStatus(SWAP_STATUS_UNSIGNED);
         // Check that all events emitted match the receipts
         for (let swap of unsignedSwaps) {
             console.log('The unsigned swap', swap);
@@ -175,7 +176,7 @@ describe("EngSwap", () => {
         // verify status of swaps
         for (const i in unsignedSwaps) {
             const swap = await db.fetchSwap(unsignedSwaps[i].transactionHash)
-            expect(swap.status).to.equal(1);
+            expect(swap.status).to.equal(SWAP_STATUS_CONFIRMED);
             expect(swap.mintTransactionHash).to.not.be.empty;
             expect(client.isSwapDone(swap.transactionHash));
 

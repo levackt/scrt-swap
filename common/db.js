@@ -1,5 +1,6 @@
 const {MongoClient} = require('mongodb');
 const Web3 = require('web3');
+const { SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_SIGNED, SWAP_STATUS_CONFIRMED} = require('./constants');
 
 const SWAP_COLLECTION = 'swap';
 const SIGNATURE_COLLECTION = 'signature';
@@ -74,34 +75,34 @@ class Db {
     }
 
     /**
-     * Completes the swap.
+     * Updates the swap status.
      * @param mintTransactionHash - The Enigma Chain mint transaction hash
+     * @param status - blockchain status
      */
-    async completeSwap(transactionHash, mintTransactionHash) {
-        console.log(`completing swap ${transactionHash}, ${mintTransactionHash}`)
-        if (!mintTransactionHash) {
+    async updateSwapStatus(transactionHash, mintTransactionHash, status) {
+        console.log(`updating swap ethTxHash=${transactionHash}, mintTransactionHash=${mintTransactionHash}, status=${status}`)
+        if (!(mintTransactionHash && status)) {
             return
+        } else if (!status >= SWAP_STATUS_SIGNED && status <= SWAP_STATUS_CONFIRMED) {
+            throw new Error("Invalid status")
         }
-        // todo verify the tx hash to be successful
 
         const query = {_id: transactionHash};
-        const swap = await this.db.collection(SWAP_COLLECTION).findOne(query);
         
-        var values = { $set: {status: 1, mintTransactionHash: mintTransactionHash } };
+        var values = { $set: {status: status, mintTransactionHash: mintTransactionHash } };
         this.db.collection(SWAP_COLLECTION).updateOne(query, values, function(err, res) {
             if (err) throw err;
-            console.log(`Completed transactionHash=${transactionHash}, mintTransactionHash=${mintTransactionHash}`);
+            console.log(`Updates transactionHash=${transactionHash}`);
         });
-        return swap.unsignedTx;
     }
 
     /**
-     * Find all unsigned swaps
+     * Find all by status.
      *
      * @returns {Promise<Array<Swap>>}
      */
-    async findAllUnsignedSwaps() {
-        const query = {status: 0};
+    async findAllByStatus(status) {
+        const query = {status: status};
         const result = await this.db.collection(SWAP_COLLECTION).find(query);
         const swaps = await result.toArray();
         for (const swap of swaps) {
@@ -118,7 +119,7 @@ class Db {
      * @returns {Promise<Array<AboveThresholdUnsignedSwap>>}
      */
     async findAboveThresholdUnsignedSwaps(threshold) {
-        const unsignedSwaps = await this.findAllUnsignedSwaps();
+        const unsignedSwaps = await this.findAllByStatus(SWAP_STATUS_UNSIGNED);
         const aboveThresholdUnsignedSwaps = [];
         for (const swap of unsignedSwaps) {
             const {transactionHash, unsignedTx, status} = swap;
