@@ -68,6 +68,7 @@ class CliSwapClient {
     }
 
     await this.executeCommand(signCmd, function(signed) {
+        if (!signed)
         return signed
     });
   }
@@ -106,14 +107,18 @@ class CliSwapClient {
     exec(`${cmd} --output json`, (error, stdout, stderr) => {
       if (error) {
         console.log(`error: ${error.message}`);
+        //todo other fatal errors
+        if (error.message.includes("ERROR: tx intended signer does not match the given signer")) {
+          throw new Error(error.message);
+        }
         return;
       }
       if (stderr) {
         console.log(`stderr: ${stderr}`);
-        return;
+        throw new Error(stderr);
       }
       if (stdout.toLowerCase().includes("error")) {
-        throw new Error(stdout)
+        throw new Error(stdout);
       }
       callback(stdout);
     });
