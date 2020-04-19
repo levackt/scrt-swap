@@ -33,7 +33,7 @@ class CliSwapClient {
   }
 
   async broadcastTokenSwap(signatures, unsignedTx) {
-      
+
       var unsignedFile = temp.path()
       let signCmd = `${this.chainClient} tx multisign ${unsignedFile} ${this.multisigAddress} --yes`
       fs.writeFileSync(unsignedFile, JSON.stringify(unsignedTx));
@@ -51,7 +51,7 @@ class CliSwapClient {
       });
       if (signed) {
         await this.executeCommand(`${this.chainClient} tx broadcast ${signedFile}`, function(result) {
-           return JSON.parse(result)
+           return result
         });
       }
   }
@@ -88,9 +88,15 @@ class CliSwapClient {
     var unsignedFile = temp.path({ prefix: "unsigned-", suffix: ".json" });
     createTxCmd = `${createTxCmd} > ${unsignedFile}`;
 
-    await this.executeCommand(createTxCmd, function(unsigned) {
-        return unsigned
+    await this.executeCommand(createTxCmd, function(result) {
+        //noop
     });
+
+    await new Promise(resolve => {
+      setTimeout(() => resolve(true), 500);
+    });
+
+    return JSON.parse(fs.readFileSync(unsignedFile));
   }
 
   async executeCommand(cmd, callback) {
@@ -109,7 +115,7 @@ class CliSwapClient {
       if (stdout.toLowerCase().includes("error")) {
         throw new Error(stdout)
       }
-      callback(JSON.parse(stdout));
+      callback(stdout);
     });
   }
 }

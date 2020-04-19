@@ -35,6 +35,13 @@ class Db {
      * @param {Swap} unsignedSwap
      */
     async insertUnsignedSwap(unsignedSwap) {
+        if (!(unsignedSwap && 
+            unsignedSwap.unsignedTx &&
+            unsignedSwap.unsignedTx.value &&
+            unsignedSwap.transactionHash && 
+            unsignedSwap.status == SWAP_STATUS_UNSIGNED)) {
+            throw new Error("Invalid unsigned swap")
+        }
         const record = {
             ...unsignedSwap,
             amount: unsignedSwap.amount.toString(),

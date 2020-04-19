@@ -95,7 +95,7 @@ class Leader {
                 if (dbSwap) {
                     console.log('Swap already exists for ethTxHash=', logBurn.transactionHash)
                 } else {
-                    const unsignedTx = this.tokenSwapClient.generateTokenSwap(
+                    const unsignedTx = await this.tokenSwapClient.generateTokenSwap(
                         logBurn.transactionHash, 
                         logBurn.from, 
                         logBurn.amount, 
