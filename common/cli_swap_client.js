@@ -54,10 +54,12 @@ class CliSwapClient {
     }
 
     async signTx (unsignedTx) {
-        const unsignedFile = '~/.kamutcli/unsigned.json';
+        // const unsignedFile = '~/.kamutcli/unsigned.json';
+        const unsignedFile = temp.path();
         fs.writeFileSync(unsignedFile, JSON.stringify(unsignedTx));
 
-        let signCmd = `docker exec ${this.chainClient} tx sign ${unsignedFile} --from=${this.fromAccount} --yes kamut`;
+        // let signCmd = `docker exec ${this.chainClient} tx sign ${unsignedFile} --from=${this.fromAccount} --yes kamut`;
+        let signCmd = `${this.chainClient} tx sign ${unsignedFile} --from=${this.fromAccount} --yes`;
 
         if (this.keyringBackend) {
             signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
