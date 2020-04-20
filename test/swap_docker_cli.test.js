@@ -1,4 +1,8 @@
 /* eslint-disable no-await-in-loop,no-undef */
+const { executeCommand } = require('../common/utils');
+
+const { CliSwapClient } = require('../common/cli_swap_client');
+
 require('dotenv').config();
 const Web3 = require('web3');
 const { expect } = require('chai');
@@ -19,24 +23,31 @@ async function sleep (ms) {
 }
 
 describe('EngSwap', () => {
-    const multisigAddress = process.env.MULTISIG_ADDRESS || 'enigma12345';
-    const nbConfirmations = process.env.NB_CONFIRMATIONS || '12';
+    const multisigAddress = process.env.MULTISIG_ADDRESS || 'enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7';
+    const nbConfirmations = '2';
     const ethHost = process.env.ETH_HOST || 'localhost';
     const ethPort = process.env.ETH_PORT || '8545';
     const networkId = process.env.NETWORK_ID || '50';
+    const keyringBackend = 'test';
+    const operatorAccount = 't2';
+    const operatorAccount2 = 't3';
+    const leaderAccount = 'smt1';
+    const chainClient = 'docker exec -i swaptest2 enigmacli';
     const pollingInterval = 1000;
     const multisigThreshold = 2;
-    const broadcastInterval = 500;
+    const broadcastInterval = 7000;
     const provider = new Web3.providers.HttpProvider(`http://${ethHost}:${ethPort}`);
     const web3 = new Web3(provider);
     const deployedSwap = EngSwap.networks[networkId];
     const deployedToken = EngToken.networks[networkId];
-    const db = new Db('mongodb://localhost:27017/', 'enigma-swap');
+    const db = new Db('mongodb://root:rootpassword@localhost:27017/', 'enigma-swap');
 
     let swapContract;
     let tokenContract;
     let accounts;
     let leader;
+    let leaderSwapClient;
+    let operatorSwapClients;
     const operators = [];
     const recipient = 'enigma1um27s6ee62r8evnv7mz85fe4mz7yx6rkvzut0e';
 
@@ -49,7 +60,14 @@ describe('EngSwap', () => {
         await db.clear(SWAP_COLLECTION);
         await db.clear(SIGNATURE_COLLECTION);
         const fromBlock = await web3.eth.getBlockNumber();
-        leader = new Leader(new MockTokenSwapClient(), multisigAddress, db, provider, networkId,
+
+        await executeCommand(`${chainClient} tx send enigma1srk8yx8y0q3u4jamdzvz2qenpehay66j3dj0tg enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7 10000000uscrt --keyring-backend test --yes"`);
+
+        leaderSwapClient = new CliSwapClient(chainClient, leaderAccount, keyringBackend, multisigAddress);
+        operatorSwapClients = [new CliSwapClient(chainClient, operatorAccount, keyringBackend, multisigAddress),
+            new CliSwapClient(chainClient, operatorAccount2, keyringBackend, multisigAddress)];
+
+        leader = new Leader(leaderSwapClient, multisigAddress, db, provider, networkId,
             fromBlock, pollingInterval, multisigThreshold, broadcastInterval);
         swapContract = new web3.eth.Contract(
             EngSwap.abi,
@@ -70,9 +88,9 @@ describe('EngSwap', () => {
             const balance = await tokenContract.methods.balanceOf(accounts[i]).call();
             console.log('Account', accounts[i], ':', balance);
         }
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 2; i++) {
             const user = `operator${i}`;
-            const operator = new Operator(new MockTokenSwapClient(), user, multisigAddress, db, provider, networkId,
+            const operator = new Operator(operatorSwapClients[i], user, multisigAddress, db, provider, networkId,
                 parseInt(nbConfirmations), fromBlock);
             operators.push(operator);
         }
@@ -100,9 +118,9 @@ describe('EngSwap', () => {
             await leader.run();
         })();
         // Let the leader populate the db
-        await sleep(300);
+        await sleep(3000);
         leader.burnWatcher.stop();
-    });
+    }).timeout(5000);
 
     let nbSwaps;
     it('...should have one unsigned swap record in the database per LogBurn receipt emitted.', async () => {
@@ -137,11 +155,11 @@ describe('EngSwap', () => {
             }
         })();
         // Let each operator post their signature
-        await sleep(300);
+        await sleep(3000);
         for (const operator of operators) {
             operator.burnWatcher.stop();
         }
-    });
+    }).timeout(5000);
 
     it('...should verify the operator signatures.', async () => {
         // Using threshold of 2 for 3 operators should return a positive
@@ -156,7 +174,7 @@ describe('EngSwap', () => {
         for (const i in unsignedSwaps) {
             const swap = unsignedSwaps[i].unsignedTx.value.msg[0].value;
 
-            expect(swap.AmountENG).to.equal(amount.toString());
+            expect(swap.AmountENG).to.equal(`${amount.toString()}.000000000000000000`);
         }
 
         // verify broadcast successfully
@@ -165,8 +183,7 @@ describe('EngSwap', () => {
             await leader.broadcastSignedSwaps();
         })();
 
-        await sleep(1000);
-        await leader.stopBroadcasting();
+        await sleep(35000);
 
         const remainingUnsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
         expect(remainingUnsignedSwaps.length).to.equal(0);
@@ -185,5 +202,5 @@ describe('EngSwap', () => {
             // todo check conversion in integ test, this only checks sample
             expect(mintTx.amount_uscrt[0].amount).to.equal('10');
         }
-    });
+    }).timeout(50000);
 });
