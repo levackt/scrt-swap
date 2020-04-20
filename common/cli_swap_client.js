@@ -61,7 +61,7 @@ class CliSwapClient {
     var unsignedFile = temp.path()
     fs.writeFileSync(unsignedFile, JSON.stringify(unsignedTx));
 
-    let signCmd = `${this.chainClient} tx sign ${unsignedFile} --multisig ${multisigAddress} --from=${this.fromAccount} --yes`;
+    let signCmd = `${this.chainClient} tx sign ${unsignedFile} --multisig ${this.multisigAddress} --from=${this.fromAccount} --yes`;
 
     if (this.keyringBackend) {
         signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
