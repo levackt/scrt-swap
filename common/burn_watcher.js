@@ -1,17 +1,15 @@
+/* eslint-disable no-underscore-dangle,no-await-in-loop */
 const Web3 = require('web3');
-const cosmos = require('cosmos-lib');
 const EngSwap = require('../client/src/contracts/EngSwap.json');
-const { sleep } = require('./utils');
+const { sleep, isValidCosmosAddress } = require('./utils');
 const logger = require('../common/logger');
-
-const prefix = process.env.BECH32_PREFIX || 'enigma';
 
 /**
  * @typedef {Object} LogBurn
- * @property {BigNumber} amount - The funds amount in ENG "grains"
+ * @property {string} amount - The funds amount in ENG "grains"
  * @property {string} from - The account who locked the funds
  * @property {string} to - The target Cosmos address
- * @property {BigNumber} nonce - The lock nonce
+ * @property {string} nonce - The lock nonce
  * @property {string} transactionHash - The transaction hash associated with the receipt
  */
 
@@ -63,7 +61,7 @@ class BurnWatcher {
                     .mul(Web3.utils.toBN(10).pow(cosmosDecimals)).toString();
 
                 const cosmosAddress = Web3.utils.hexToAscii(evt.returnValues._to);
-                if (this.isValidCosmosAddress(cosmosAddress)) {
+                if (isValidCosmosAddress(cosmosAddress)) {
                     const logBurn = {
                         transactionHash: evt.transactionHash,
                         from: Web3.utils.toChecksumAddress(evt.returnValues._from),
@@ -73,27 +71,12 @@ class BurnWatcher {
                     };
                     yield logBurn;
                 } else {
-                    console.error(`Invalid recipient: ${cosmosAddress}, transactionHash:${evt.transactionHash}`);
+                    logger.error(`Invalid recipient: ${cosmosAddress}, transactionHash:${evt.transactionHash}`);
                 }
             }
+            // eslint-disable-next-line no-await-in-loop
             await sleep(this.pollingInterval);
         } while (this.watching);
-    }
-
-    /**
-     * Checksum the recipient address.
-     */
-    isValidCosmosAddress (recipient) {
-        if (!recipient || !recipient.startsWith(prefix)) {
-            return false;
-        }
-        try {
-            cosmos.address.getBytes32(recipient);
-            return true;
-        } catch (error) {
-            logger.error(error);
-        }
-        return false;
     }
 
     /**

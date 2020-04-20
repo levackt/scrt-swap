@@ -5,7 +5,7 @@ const convict = require('convict');
 const config = convict({
     env: {
         format: ['prod', 'dev', 'test'],
-        default: 'test',
+        default: 'prod',
         arg: 'nodeEnv',
         env: 'NODE_ENV'
     },
@@ -24,13 +24,13 @@ const config = convict({
     ethProviderUrl: {
         format: String,
         default: 'http://localhost:8545',
-        arg: 'dbpass',
+        arg: 'ethProviderUrl',
         env: 'ETH_PROVIDER'
     },
     multisigAddress: {
         format: Number,
         default: 'enigma12345',
-        arg: 'port',
+        arg: 'multisigAddress',
         env: 'MULTISIG_ADDRESS'
     },
     keyringBackend: {
@@ -86,6 +86,12 @@ const config = convict({
         default: '',
         arg: 'user',
         env: 'USER'
+    },
+    bech32prefix: {
+        format: String,
+        default: 'enigma',
+        arg: 'prefix',
+        env: 'PREFIX'
     }
 });
 

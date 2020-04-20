@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 const logger = require('../common/logger');
 const { sleep } = require('../common/utils');
 const { BurnWatcher } = require('../common/burn_watcher');
@@ -58,36 +59,44 @@ class Leader {
         this.broadcasting = false;
     }
 
+    // noinspection FunctionWithMultipleLoopsJS
     async broadcastSignedSwaps () {
         logger.info('Watching for signed swaps');
         this.broadcasting = true;
         do {
             const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold);
             logger.info(`Found ${signedSwaps.length} swaps`);
+
+            // eslint-disable-next-line no-restricted-syntax
             for (const swap of signedSwaps) {
                 const result = await this.tokenSwapClient.broadcastTokenSwap(
-                    signedSwaps[swap].signatures,
-                    signedSwaps[swap].unsignedTx
+                    swap.signatures,
+                    swap.unsignedTx
                 );
                 if (result.txhash) {
-                    await this.db.updateSwapStatus(signedSwaps[swap].transactionHash, result.txhash, SWAP_STATUS_SUBMITTED);
+                    await this.db.updateSwapStatus(swap.transactionHash,
+                        result.txhash, SWAP_STATUS_SUBMITTED);
                 } else {
                     logger.error(`broadcastSignedSwaps result: ${result}`);
                 }
             }
 
             const submittedTxs = await this.db.findAllByStatus(SWAP_STATUS_SUBMITTED);
-            for (const swap of submittedTxs) {
-                if (this.tokenSwapClient.isSwapDone(swap.transactionHash)) {
-                    await this.db.updateSwapStatus(swap.transactionHash, swap.mintTransactionHash, SWAP_STATUS_CONFIRMED);
-                }
-            }
+            await Promise.all(
+                submittedTxs.map(async (swap) => {
+                    if (await this.tokenSwapClient.isSwapDone(swap.transactionHash)) {
+                        await this.db.updateSwapStatus(swap.transactionHash,
+                            swap.mintTransactionHash, SWAP_STATUS_CONFIRMED);
+                    }
+                })
+            );
 
             await sleep(this.broadcastInterval);
         } while (this.broadcasting);
     }
 
     async run () {
+        // eslint-disable-next-line no-restricted-syntax
         for await (const logBurn of this.burnWatcher.watchBurnLog()) {
             try {
                 const dbSwap = await this.db.fetchSwap(logBurn.transactionHash);

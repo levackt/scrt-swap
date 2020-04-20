@@ -1,7 +1,7 @@
 const temp = require('temp').track();
 const fs = require('fs');
 const { sleep, executeCommand, readFile } = require('./utils');
-
+const logger = require('./logger');
 /**
  *
  * @property {string} chainClient - Chain Client (eg enigmacli, kamutcli, gaiacli etc)
@@ -20,13 +20,14 @@ class CliSwapClient {
     async isSwapDone (ethTxHash) {
         const tokenSwap = await this.getTokenSwap(ethTxHash);
         if (tokenSwap.length === 0 || tokenSwap.includes('ERROR')) {
-            return false;
+            logger.error(`Returned tokenswap was empty or errored for tx hash: ${ethTxHash}`);
+            throw new Error('Failed to get tokenswap for tx hash');
         }
         return JSON.parse(tokenSwap).done;
     }
 
     async getTokenSwap (ethTxHash) {
-        return executeCommand(`${this.chainClient} query tokenswap get ${ethTxHash}`, result => result);
+        return executeCommand(`${this.chainClient} query tokenswap get ${ethTxHash}`);
     }
 
     async broadcastTokenSwap (signatures, unsignedTx) {
@@ -43,12 +44,13 @@ class CliSwapClient {
         signCmd = `${signCmd} > ${signedFile}`;
         const signed = await executeCommand(signCmd);
         if (signed) {
-            await executeCommand(`${this.chainClient} tx broadcast ${signedFile}`);
+            return executeCommand(`${this.chainClient} tx broadcast ${signedFile}`);
         }
+        throw new Error('Failed to sign');
     }
 
     async signTx (unsignedTx) {
-        //const unsignedFile = '~/.kamutcli/unsigned.json';
+        // const unsignedFile = '~/.kamutcli/unsigned.json';
         const unsignedFile = temp.path();
         fs.writeFileSync(unsignedFile, JSON.stringify(unsignedTx));
 
@@ -59,7 +61,7 @@ class CliSwapClient {
             signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
         }
 
-        await executeCommand(signCmd, signed => signed);
+        return executeCommand(signCmd);
     }
 
     /**

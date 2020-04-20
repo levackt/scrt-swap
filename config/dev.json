@@ -1,7 +1,7 @@
 {
   "networkId": "50",
   "pollingInterval": 1000,
-  "ethProviderUrl": "http://localhost:8545",
+  "ethProviderUrl": "http://172.22.89.155:8545/",
   "multisigAddress": "enigma12345",
   "keyringBackend": "test",
   "db_url": "mongodb://localhost:27017",
