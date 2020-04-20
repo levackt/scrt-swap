@@ -65,6 +65,7 @@ class CliSwapClient {
         // eslint-disable-next-line max-len
         let signCmd = `${this.chainClient} tx sign ${unsignedFile} --multisig ${this.multisigAddress} --from=${this.fromAccount} --yes`;
 
+
         if (this.keyringBackend) {
             signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
         }
