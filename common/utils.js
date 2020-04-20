@@ -1,11 +1,25 @@
 const cprocess = require('child_process');
 const cosmos = require('cosmos-lib');
 const fs = require('fs');
+const path = require('path');
 const util = require('util');
 const logger = require('../common/logger');
 const config = require('./config');
 
-const processSpawn = util.promisify(cprocess.execFile);
+const os = require('os');
+
+function resolveTilde (filePath) {
+    if (!filePath || typeof (filePath) !== 'string') {
+        return '';
+    }
+    // '~/folder/path' or '~'
+    if (filePath[0] === '~' && (filePath[1] === '/' || filePath.length === 1)) {
+        return filePath.replace('~', os.homedir());
+    }
+    return filePath;
+}
+
+const processSpawn = util.promisify(cprocess.exec);
 
 async function sleep (time) {
     await new Promise((resolve) => {
@@ -24,13 +38,13 @@ const promiseReadFile = util.promisify(fs.readFile);
 const promiseWriteFile = util.promisify(fs.writeFile);
 
 async function writeFile (filePath, data) {
-    return promiseWriteFile(filePath, data);
+    return promiseWriteFile(resolveTilde(filePath), data);
 
     // yield promiseReadFile(filePath);
 }
 
 async function readFile (filePath) {
-    return promiseReadFile(filePath);
+    return promiseReadFile(resolveTilde(filePath));
 }
 
 /**

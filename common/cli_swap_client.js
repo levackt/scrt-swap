@@ -1,6 +1,6 @@
-const temp = require('temp').track();
-const fs = require('fs');
-const { sleep, executeCommand, readFile } = require('./utils');
+// const temp = require('temp').track();
+// const fs = require('fs');
+const { executeCommand, readFile, writeFile } = require('./utils');
 const logger = require('./logger');
 /**
  *
@@ -15,6 +15,7 @@ class CliSwapClient {
         this.fromAccount = fromAccount;
         this.keyringBackend = keyringBackend;
         this.multisigAddress = multisigAddress;
+        this.basePath = '~/.enigmacli';
     }
 
     async isSwapDone (ethTxHash) {
@@ -31,31 +32,38 @@ class CliSwapClient {
     }
 
     async broadcastTokenSwap (signatures, unsignedTx) {
-        const unsignedFile = temp.path();
-        let signCmd = `${this.chainClient} tx multisign ${unsignedFile} ${this.multisigAddress} --yes`;
-        fs.writeFileSync(unsignedFile, JSON.stringify(unsignedTx));
-        for (const signature of signatures) {
-            const tempName = temp.path();
-            fs.writeFileSync(tempName, JSON.stringify(signature));
-            signCmd = `${signCmd} ${tempName}`;
-        }
-        const signedFile = temp.path();
+        const unsignedFile = `${this.basePath}/${this.fromAccount}_unsigned.json`;
+        let signCmd = `${this.chainClient} tx multisign ${unsignedFile} ${this.fromAccount} --yes`;
+        await writeFile(unsignedFile, JSON.stringify(unsignedTx));
 
+        await Promise.all(signatures.map(
+            async (signature) => {
+                const tempName = `${this.basePath}/${this.fromAccount}_signed_${signature.user}.json`;
+                // eslint-disable-next-line no-await-in-loop
+                await writeFile(tempName, signature.signature);
+                signCmd = `${signCmd} ${tempName}`;
+            }
+        ));
+        // const signedFile = temp.path();
+        const signedFile = `${this.basePath}/${this.fromAccount}_signed.json`;
         signCmd = `${signCmd} > ${signedFile}`;
-        const signed = await executeCommand(signCmd);
-        if (signed) {
-            return executeCommand(`${this.chainClient} tx broadcast ${signedFile}`);
+
+        if (this.keyringBackend) {
+            signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
         }
-        throw new Error('Failed to sign');
+
+        await executeCommand(signCmd);
+        // todo: verify signature some other way
+
+        return executeCommand(`${this.chainClient} tx broadcast ${signedFile}`);
     }
 
     async signTx (unsignedTx) {
-        // const unsignedFile = '~/.kamutcli/unsigned.json';
-        const unsignedFile = temp.path();
-        fs.writeFileSync(unsignedFile, JSON.stringify(unsignedTx));
+        const unsignedFile = `${this.basePath}/${this.fromAccount}_unsigned_operator.json`;
 
-        // let signCmd = `docker exec ${this.chainClient} tx sign ${unsignedFile} --from=${this.fromAccount} --yes kamut`;
-        let signCmd = `${this.chainClient} tx sign ${unsignedFile} --from=${this.fromAccount} --yes`;
+        await writeFile(unsignedFile, JSON.stringify(unsignedTx));
+        // eslint-disable-next-line max-len
+        let signCmd = `${this.chainClient} tx sign ${unsignedFile} --multisig ${this.multisigAddress} --from=${this.fromAccount} --yes`;
 
         if (this.keyringBackend) {
             signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
@@ -78,11 +86,11 @@ class CliSwapClient {
         if (this.keyringBackend) {
             createTxCmd = `${createTxCmd} --keyring-backend ${this.keyringBackend}`;
         }
-        const unsignedFile = temp.path({ prefix: 'unsigned-', suffix: '.json' });
+        const unsignedFile = `~/.enigmacli/${this.fromAccount}unsigned.json`;
+        // const unsignedFile = temp.path({ prefix: 'unsigned-', suffix: '.json' });
         createTxCmd = `${createTxCmd} > ${unsignedFile}`;
 
         await executeCommand(createTxCmd);
-        await sleep(500);
         return JSON.parse(await readFile(unsignedFile));
     }
 }

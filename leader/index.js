@@ -45,7 +45,7 @@ class Leader {
      * @param broadcastInterval
      */
     constructor (tokenSwapClient, multisig, db, provider, networkId, fromBlock = 0, pollingInterval = 30000,
-        multisigThreshold = 2, broadcastInterval = 1000) {
+        multisigThreshold = 2, broadcastInterval = 7000) {
         this.multisig = multisig;
         this.multisigThreshold = multisigThreshold;
         this.broadcastInterval = broadcastInterval;
@@ -69,16 +69,17 @@ class Leader {
 
             // eslint-disable-next-line no-restricted-syntax
             for (const swap of signedSwaps) {
-                const result = await this.tokenSwapClient.broadcastTokenSwap(
+                const result = JSON.parse(await this.tokenSwapClient.broadcastTokenSwap(
                     swap.signatures,
                     swap.unsignedTx
-                );
+                ));
                 if (result.txhash) {
                     await this.db.updateSwapStatus(swap.transactionHash,
                         result.txhash, SWAP_STATUS_SUBMITTED);
                 } else {
                     logger.error(`broadcastSignedSwaps result: ${result}`);
                 }
+                await sleep(this.broadcastInterval);
             }
 
             const submittedTxs = await this.db.findAllByStatus(SWAP_STATUS_SUBMITTED);
