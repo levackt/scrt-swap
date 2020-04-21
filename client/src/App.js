@@ -16,6 +16,7 @@ import Container from "@material-ui/core/Container";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Grid from "@material-ui/core/Grid";
 import theme from "./theme";
+import TermsDialog from "./components/terms"
 
 const cosmos = require("cosmos-lib");
 const Web3 = require("web3");
@@ -292,6 +293,7 @@ class App extends Component {
 
   render() {
     const { errors } = this.state;
+    const preventDefault = (event) => event.preventDefault();
 
     if (!this.state.web3) {
       return <div>Loading Web3, accounts, and contract...</div>;
@@ -356,20 +358,16 @@ class App extends Component {
                   </Grid>
                 )}
                 <Grid item xs={12}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
+                  <Checkbox
                         onChange={this.handleChange}
                         checked={this.state.accepted}
                         name="termsAccepted"
                         color="primary"
                       />
-                    }
-                    label="Agree to the terms and conditions"
-                  />
+                  <TermsDialog></TermsDialog>
                 </Grid>
                 <Grid item xs={12}>
-                  <StyledButton
+                  <StyledButton color="primary"
                     onClick={this.handleSubmit}
                     disabled={!this.canSubmit()}
                   >
