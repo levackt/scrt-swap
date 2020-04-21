@@ -84,7 +84,7 @@ class App extends Component {
           errors.recipientAddress = `Invalid prefix, expected ${prefix}`;
         }
         try {
-          const bytes32 = cosmos.address.getBytes32(value, prefix);
+          cosmos.address.getBytes32(value, prefix);
           this.setState({
             recipientAddress: value
           });
@@ -293,7 +293,6 @@ class App extends Component {
 
   render() {
     const { errors } = this.state;
-    const preventDefault = (event) => event.preventDefault();
 
     if (!this.state.web3) {
       return <div>Loading Web3, accounts, and contract...</div>;
