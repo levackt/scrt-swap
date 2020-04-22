@@ -40,7 +40,7 @@ class Operator {
                         await this.db.insertSignature(this.user, transactionHash, signature);
                         logger.info(`signed tx hash ${transactionHash}`);
                     } catch (e) {
-                        logger.error('Cannot sign unsigned tx', swap.unsignedTx, logBurn, e);
+                        logger.error(`Cannot sign unsigned tx ${swap.unsignedTx}, ${logBurn}, error: ${e}`);
                     }
                 } else {
                     logger.info(`Skipping signing ethTxHash=${transactionHash}`);

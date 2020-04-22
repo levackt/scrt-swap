@@ -29,8 +29,8 @@ async function sleep (time) {
 
 async function executeCommand (cmd) {
     // todo timeout
-    logger.info(`Executing cmd : ${cmd} --output json`);
-    const result = await processSpawn(`${cmd} --output json`);
+    logger.info(`Executing cmd : ${cmd} --output json"`);
+    const result = await processSpawn(`${cmd} --output json"`);
     return result.stdout;
 }
 
