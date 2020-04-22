@@ -81,7 +81,7 @@ describe('EngSwap', () => {
         accounts = await web3.eth.getAccounts();
         const balance = await tokenContract.methods.balanceOf(accounts[0]).call();
         console.log('The deployment balance', balance);
-        for (let i = 1; i < 5; i++) {
+        for (let i = 1; i < 2; i++) {
             const tokenDecimals = web3.utils.toBN(18);
             const tokenAmountToTransfer = web3.utils.toBN(100);
             const amount = tokenAmountToTransfer.mul(web3.utils.toBN(10).pow(tokenDecimals));
@@ -99,7 +99,7 @@ describe('EngSwap', () => {
 
     const receipts = [];
     it('...should burn funds.', async () => {
-        for (let i = 1; i < 5; i++) {
+        for (let i = 1; i < 2; i++) {
             const tokenDecimals = web3.utils.toBN(18);
             const amount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
             console.log('Burning funds from', accounts[i], 'to', recipient);
@@ -184,7 +184,7 @@ describe('EngSwap', () => {
             await leader.broadcastSignedSwaps();
         })();
 
-        await sleep(35000);
+        await sleep(10000);
 
         const remainingUnsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
         expect(remainingUnsignedSwaps.length).to.equal(0);
@@ -203,5 +203,5 @@ describe('EngSwap', () => {
             // todo check conversion in integ test, this only checks sample
             expect(mintTx.amount_uscrt[0].amount).to.equal('10');
         }
-    }).timeout(50000);
+    }).timeout(15000);
 });

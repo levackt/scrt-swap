@@ -6,9 +6,12 @@ const config = require('./config');
 const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
 // const httpClient = axios.create({ baseURL: config.api });
 
+// this is just for me running on windows to be able to run commands inside the docker with the blockchain
+const docker = os.platform() === 'win32' ? 'docker exec -it swaptest3 /bin/bash' : '';
+
 const cmd = {
     spawnProcess () {
-        const ptyProcess = pty.spawn(shell, ['docker exec -it swaptest3 /bin/bash'], {
+        const ptyProcess = pty.spawn(shell, [docker], {
             name: Math.random().toString(36).substring(7),
             cols: 8000,
             rows: 30,
@@ -84,89 +87,89 @@ const cmd = {
         ptyProcess.write(toRun);
     },
 
-    createKey (name, password, callback) {
-        const ptyProcess = cmd.spawnProcess();
-
-        let buildResponse = '';
-
-        ptyProcess.on('data', (data) => {
-            process.stdout.write(data);
-
-            // 0.37.9
-            if (data.includes('Enter a passphrase')) {
-                // process.stdout.write('Setting password to '+password);
-                ptyProcess.write(`${password}\r`);
-            }
-            // 0.37.9
-            if (data.includes('Repeat the passphrase')) {
-                // process.stdout.write('Confirming password to '+password);
-                ptyProcess.write(`${password}\r`);
-            }
-
-            // 0.38.x
-            if (data.includes('Enter keyring passphrase:')) {
-                // process.stdout.write('Setting password to '+password);
-                ptyProcess.write(`${password}\r`);
-            }
-
-            if (os.platform() !== 'win32') {
-                buildResponse += data;
-
-                if (data.split(' ').length === 24) {
-                    const tmpData = buildResponse.split('\n');
-
-                    let publicKey = '';
-                    let address = '';
-                    let seedPhrase = '';
-
-                    for (let i = 0; i < tmpData.length; i++) {
-                        // eslint-disable-next-line max-len
-                        if (tmpData[i].indexOf('NAME:') >= 0 && tmpData[i].indexOf('TYPE:') >= 0 && tmpData[i].indexOf('ADDRESS:') >= 0 && tmpData[i].indexOf('PUBKEY:') >= 0) {
-                            const arr = tmpData[i + 1].split('\t').filter(Boolean);
-                            address = arr[2].replace('\r', '');
-                            publicKey = arr[3].replace('\r', '');
-                            console.log(arr);
-                        }
-
-                        if (tmpData[i].split(' ').length === 24) {
-                            seedPhrase = tmpData[i].replace('\r', '');
-                        }
-                    }
-
-                    ptyProcess.write('exit\r');
-
-                    callback(null, {
-                        address,
-                        publicKey,
-                        seedPhrase
-                    });
-                }
-            } else if (data.includes('**Important**')) {
-                // process.stdout.write(data);
-                // eslint-disable-next-line max-len
-                const tmpData = data.replace(/\s\s+/g, ' ').replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '').split(' ');
-                const address = tmpData[6];
-                const publicKey = tmpData[7];
-                const seedPhrase = tmpData.slice(33, 57).join(' ');
-
-                ptyProcess.write('exit\r');
-                callback(null, {
-                    address,
-                    publicKey,
-                    seedPhrase
-                });
-            }
-
-            if (data.includes('override the existing name')) {
-                ptyProcess.write('n\r');
-                ptyProcess.write('exit\r');
-                callback('Symbol already exists', {});
-            }
-        });
-
-        // ptyProcess.write(`cd ${config.filePath}\r`);
-        ptyProcess.write(`${config.chainClient} keys add ${name}\r`);
-    },
+    // createKey (name, password, callback) {
+    //     const ptyProcess = cmd.spawnProcess();
+    //
+    //     let buildResponse = '';
+    //
+    //     ptyProcess.on('data', (data) => {
+    //         process.stdout.write(data);
+    //
+    //         // 0.37.9
+    //         if (data.includes('Enter a passphrase')) {
+    //             // process.stdout.write('Setting password to '+password);
+    //             ptyProcess.write(`${password}\r`);
+    //         }
+    //         // 0.37.9
+    //         if (data.includes('Repeat the passphrase')) {
+    //             // process.stdout.write('Confirming password to '+password);
+    //             ptyProcess.write(`${password}\r`);
+    //         }
+    //
+    //         // 0.38.x
+    //         if (data.includes('Enter keyring passphrase:')) {
+    //             // process.stdout.write('Setting password to '+password);
+    //             ptyProcess.write(`${password}\r`);
+    //         }
+    //
+    //         if (os.platform() !== 'win32') {
+    //             buildResponse += data;
+    //
+    //             if (data.split(' ').length === 24) {
+    //                 const tmpData = buildResponse.split('\n');
+    //
+    //                 let publicKey = '';
+    //                 let address = '';
+    //                 let seedPhrase = '';
+    //
+    //                 for (let i = 0; i < tmpData.length; i++) {
+    //                     // eslint-disable-next-line max-len
+    //                     if (tmpData[i].indexOf('NAME:') >= 0 && tmpData[i].indexOf('TYPE:') >= 0 && tmpData[i].indexOf('ADDRESS:') >= 0 && tmpData[i].indexOf('PUBKEY:') >= 0) {
+    //                         const arr = tmpData[i + 1].split('\t').filter(Boolean);
+    //                         address = arr[2].replace('\r', '');
+    //                         publicKey = arr[3].replace('\r', '');
+    //                         console.log(arr);
+    //                     }
+    //
+    //                     if (tmpData[i].split(' ').length === 24) {
+    //                         seedPhrase = tmpData[i].replace('\r', '');
+    //                     }
+    //                 }
+    //
+    //                 ptyProcess.write('exit\r');
+    //
+    //                 callback(null, {
+    //                     address,
+    //                     publicKey,
+    //                     seedPhrase
+    //                 });
+    //             }
+    //         } else if (data.includes('**Important**')) {
+    //             // process.stdout.write(data);
+    //             // eslint-disable-next-line max-len
+    //             const tmpData = data.replace(/\s\s+/g, ' ').replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '').split(' ');
+    //             const address = tmpData[6];
+    //             const publicKey = tmpData[7];
+    //             const seedPhrase = tmpData.slice(33, 57).join(' ');
+    //
+    //             ptyProcess.write('exit\r');
+    //             callback(null, {
+    //                 address,
+    //                 publicKey,
+    //                 seedPhrase
+    //             });
+    //         }
+    //
+    //         if (data.includes('override the existing name')) {
+    //             ptyProcess.write('n\r');
+    //             ptyProcess.write('exit\r');
+    //             callback('Symbol already exists', {});
+    //         }
+    //     });
+    //
+    //     // ptyProcess.write(`cd ${config.filePath}\r`);
+    //     ptyProcess.write(`${config.chainClient} keys add ${name}\r`);
+    // },
 
     signTx (unsignedFile, password, multisigAddress, fromAccount, outputFile, callback) {
         // eslint-disable-next-line max-len
@@ -199,7 +202,7 @@ const cmd = {
 };
 
 const commands = {
-    createKey: util.promisify(cmd.createKey),
+    // createKey: util.promisify(cmd.createKey),
     swap: util.promisify(cmd.swap),
     signTx: util.promisify(cmd.signTx),
     broadcast: util.promisify(cmd.broadcast),

@@ -80,7 +80,7 @@ class CliSwapClient {
         // }
 
         const resp = await commands.signTx(unsignedFile, this.password, this.multisigAddress, this.fromAccount, signedFile);
-        logger.info(`resp: ${JSON.stringify(resp)}`)
+        logger.info(`resp: ${JSON.stringify(resp)}`);
         return readFile(signedFile);
     }
 
