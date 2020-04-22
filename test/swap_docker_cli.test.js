@@ -23,7 +23,7 @@ async function sleep (ms) {
 }
 
 describe('EngSwap', () => {
-    const multisigAddress = process.env.MULTISIG_ADDRESS || 'enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7';
+    const multisigAddress = process.env.MULTISIG_ADDRESS || 'enigma1c52jw3wtxjn90hylquqka2q687jh9jlfsy9skp';
     const nbConfirmations = '2';
     const ethHost = process.env.ETH_HOST || 'localhost';
     const ethPort = process.env.ETH_PORT || '8545';
@@ -31,8 +31,9 @@ describe('EngSwap', () => {
     const keyringBackend = 'test';
     const operatorAccount = 't2';
     const operatorAccount2 = 't3';
-    const leaderAccount = 'smt1';
-    const chainClient = 'docker exec -i swaptest2 enigmacli';
+    const leaderAccount = 'ms1';
+    const chainClient = 'docker exec -i swaptest3 bash -c "enigmacli';
+    const password = '';
     const pollingInterval = 1000;
     const multisigThreshold = 2;
     const broadcastInterval = 7000;
@@ -61,11 +62,11 @@ describe('EngSwap', () => {
         await db.clear(SIGNATURE_COLLECTION);
         const fromBlock = await web3.eth.getBlockNumber();
 
-        await executeCommand(`${chainClient} tx send enigma1srk8yx8y0q3u4jamdzvz2qenpehay66j3dj0tg enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7 10000000uscrt --keyring-backend test --yes"`);
+        // await executeCommand(`${chainClient} tx send enigma1srk8yx8y0q3u4jamdzvz2qenpehay66j3dj0tg enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7 10000000uscrt --keyring-backend test --yes"`);
 
-        leaderSwapClient = new CliSwapClient(chainClient, leaderAccount, keyringBackend, multisigAddress);
-        operatorSwapClients = [new CliSwapClient(chainClient, operatorAccount, keyringBackend, multisigAddress),
-            new CliSwapClient(chainClient, operatorAccount2, keyringBackend, multisigAddress)];
+        leaderSwapClient = new CliSwapClient(chainClient, leaderAccount, keyringBackend, multisigAddress, password);
+        operatorSwapClients = [new CliSwapClient(chainClient, operatorAccount, keyringBackend, multisigAddress, password),
+            new CliSwapClient(chainClient, operatorAccount2, keyringBackend, multisigAddress, password)];
 
         leader = new Leader(leaderSwapClient, multisigAddress, db, provider, networkId,
             fromBlock, pollingInterval, multisigThreshold, broadcastInterval);
@@ -80,7 +81,7 @@ describe('EngSwap', () => {
         accounts = await web3.eth.getAccounts();
         const balance = await tokenContract.methods.balanceOf(accounts[0]).call();
         console.log('The deployment balance', balance);
-        for (let i = 1; i < 5; i++) {
+        for (let i = 1; i < 2; i++) {
             const tokenDecimals = web3.utils.toBN(18);
             const tokenAmountToTransfer = web3.utils.toBN(100);
             const amount = tokenAmountToTransfer.mul(web3.utils.toBN(10).pow(tokenDecimals));
@@ -98,7 +99,7 @@ describe('EngSwap', () => {
 
     const receipts = [];
     it('...should burn funds.', async () => {
-        for (let i = 1; i < 5; i++) {
+        for (let i = 1; i < 2; i++) {
             const tokenDecimals = web3.utils.toBN(18);
             const amount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
             console.log('Burning funds from', accounts[i], 'to', recipient);
@@ -155,11 +156,11 @@ describe('EngSwap', () => {
             }
         })();
         // Let each operator post their signature
-        await sleep(3000);
+        await sleep(10000);
         for (const operator of operators) {
             operator.burnWatcher.stop();
         }
-    }).timeout(5000);
+    }).timeout(14000);
 
     it('...should verify the operator signatures.', async () => {
         // Using threshold of 2 for 3 operators should return a positive
@@ -183,7 +184,7 @@ describe('EngSwap', () => {
             await leader.broadcastSignedSwaps();
         })();
 
-        await sleep(35000);
+        await sleep(10000);
 
         const remainingUnsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
         expect(remainingUnsignedSwaps.length).to.equal(0);
@@ -202,5 +203,5 @@ describe('EngSwap', () => {
             // todo check conversion in integ test, this only checks sample
             expect(mintTx.amount_uscrt[0].amount).to.equal('10');
         }
-    }).timeout(50000);
+    }).timeout(15000);
 });

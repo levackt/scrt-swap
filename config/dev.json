@@ -5,7 +5,7 @@
   "multisigAddress": "enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7",
   "keyringBackend": "test",
   "db_url": "mongodb://localhost:27017",
-  "chainClient": "docker exec swaptest2 enigmacli",
+  "chainClient": "enigmacli",
   "fromAccount": "t1",
   "broadcastInterval": 30000,
   "nbConfirmations": "2",

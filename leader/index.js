@@ -124,7 +124,7 @@ class Leader {
                     await this.db.insertUnsignedSwap(unsignedSwap);
                 }
             } catch (e) {
-                logger.error('Cannot create unsigned tx', logBurn, e);
+                logger.error(`Cannot create unsigned tx: ${logBurn}, error: ${e}`);
             }
         }
     }
