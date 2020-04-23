@@ -57,6 +57,12 @@ const config = convict({
         arg: 'chainClient',
         env: 'CHAIN_CLIENT'
     },
+    chainId: {
+        format: String,
+        default: 'enigma-testnet',
+        arg: 'chain-id',
+        env: 'CHAIN_ID'
+    },
     fromAccount: {
         format: String,
         default: '',
@@ -92,6 +98,10 @@ const config = convict({
         default: 'enigma',
         arg: 'prefix',
         env: 'PREFIX'
+    },
+    docker: {
+        format: Boolean,
+        default: false
     }
 });
 
