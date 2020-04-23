@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^2.5.0",
+    "@tendermint/sig": "^0.4.1",
     "console-stamp": "^0.2.9",
     "convict": "^5.2.0",
     "cosmos-lib": "^1.1.0",

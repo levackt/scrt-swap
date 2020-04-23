@@ -2,7 +2,7 @@
 // const fs = require('fs');
 const { executeCommand, readFile, writeFile } = require('./utils');
 const logger = require('./logger');
-
+const config = require('./config');
 const { commands } = require('./process');
 
 /**
@@ -13,13 +13,37 @@ const { commands } = require('./process');
  * @property {string} multisigAddress - Address of the multisig account
  */
 class CliSwapClient {
-    constructor (chainClient, fromAccount, keyringBackend, multisigAddress, password) {
+    constructor (chainClient, fromAccount, multisigAddress, password) {
         this.chainClient = chainClient;
-        this.fromAccount = fromAccount;
-        this.keyringBackend = keyringBackend;
+        this.accountName = fromAccount;
         this.multisigAddress = multisigAddress;
         this.basePath = '~/.enigmacli';
         this.password = password;
+    }
+
+    async getAccountAddress () {
+        // eslint-disable-next-line max-len
+        return executeCommand(`${this.chainClient} keys show -a ${this.accountName} --keyring-backend ${config.keyringBackend}`, false).catch(
+            (error) => {
+                logger.error(`Failed to execute command to get sequence number: ${error}`);
+                throw new Error('Failed to get sequence number');
+            }
+        );
+    }
+
+    async sequenceNumber () {
+        const res = await executeCommand(`${this.chainClient} query account ${await this.getAccountAddress()}`).catch(
+            (error) => {
+                logger.error(`Failed to execute command to get sequence number: ${error}`);
+                throw new Error('Failed to get sequence number');
+            }
+        );
+        const parsed = JSON.parse(res);
+        if (!Object.prototype.hasOwnProperty.call(parsed.value, 'sequence')) {
+            logger.error(`Resulting account information doesn't contain sequence number: ${JSON.stringify(parsed)}`);
+            throw new Error('Failed to get sequence number');
+        }
+        return parsed.value.sequence;
     }
 
     async isSwapDone (ethTxHash) {
@@ -35,8 +59,11 @@ class CliSwapClient {
         return executeCommand(`${this.chainClient} query tokenswap get ${ethTxHash}`);
     }
 
-    async broadcastTokenSwap (signatures, unsignedTx) {
-        const unsignedFile = `${this.basePath}/${this.fromAccount}_${unsignedTx.value.msg[0].value.BurnTxHash}_unsigned.json`;
+    /**
+     * @returns {string}
+     */
+    async broadcastTokenSwap (signatures, unsignedTx, sequence) {
+        const unsignedFile = `${this.basePath}/${this.accountName}_${unsignedTx.value.msg[0].value.BurnTxHash}_unsigned.json`;
 
         await writeFile(unsignedFile, JSON.stringify(unsignedTx));
 
@@ -44,42 +71,29 @@ class CliSwapClient {
 
         await Promise.all(signatures.map(
             async (signature) => {
-                const tempName = `${this.basePath}/${this.fromAccount}_signed_${signature.user}_${signature.transactionHash}.json`;
+                const tempName = `${this.basePath}/${this.accountName}_signed_${signature.user}_${signature.transactionHash}.json`;
                 // eslint-disable-next-line no-await-in-loop
                 await writeFile(tempName, signature.signature);
                 sigFiles.push(tempName);
             }
         ));
-        // const signedFile = temp.path();
-        const signedFile = `${this.basePath}/${this.fromAccount}_${unsignedTx.value.msg[0].value.BurnTxHash}signed.json`;
-        // signCmd = `${signCmd} > ${signedFile}`;
+        const signedFile = `${this.basePath}/${this.accountName}_${unsignedTx.value.msg[0].value.BurnTxHash}signed.json`;
 
-        // if (this.keyringBackend) {
-        //     signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
-        // }
-
-        await commands.multisign(unsignedFile, this.password, this.fromAccount, sigFiles, signedFile);
+        await commands.multisign(unsignedFile, this.accountName, sigFiles, sequence, signedFile);
         // todo: verify signature some other way
 
-        const outputFile = `${this.basePath}/${this.fromAccount}_${unsignedTx.value.msg[0].value.BurnTxHash}_broadcast.json`;
+        const outputFile = `${this.basePath}/${this.accountName}_${unsignedTx.value.msg[0].value.BurnTxHash}_broadcast.json`;
 
-        await commands.broadcast(signedFile, this.password, outputFile);
-
+        await commands.broadcast(signedFile, sequence, outputFile);
         return readFile(outputFile);
     }
 
-    async signTx (unsignedTx) {
-        const unsignedFile = `${this.basePath}/${this.fromAccount}_unsigned_operator.json`;
-        const signedFile = `${this.basePath}/${this.fromAccount}_sig_${unsignedTx.value.msg[0].value.BurnTxHash}.json`;
+    async signTx (unsignedTx, sequence) {
+        const unsignedFile = `${this.basePath}/${this.accountName}_unsigned_operator.json`;
+        const signedFile = `${this.basePath}/${this.accountName}_sig_${unsignedTx.value.msg[0].value.BurnTxHash}.json`;
         await writeFile(unsignedFile, JSON.stringify(unsignedTx));
-        // eslint-disable-next-line max-len
-        // let signCmd = `${this.chainClient} tx sign ${unsignedFile} --multisig ${this.multisigAddress} --from=${this.fromAccount} --yes`;
-        //
-        // if (this.keyringBackend) {
-        //     signCmd = `${signCmd} --keyring-backend ${this.keyringBackend}`;
-        // }
 
-        const resp = await commands.signTx(unsignedFile, this.password, this.multisigAddress, this.fromAccount, signedFile);
+        const resp = await commands.signTx(unsignedFile, this.password, this.multisigAddress, this.accountName, sequence, signedFile);
         logger.info(`resp: ${JSON.stringify(resp)}`);
         return readFile(signedFile);
     }
@@ -94,17 +108,9 @@ class CliSwapClient {
    */
     async generateTokenSwap (ethTxHash, senderEthAddress, amountTokens, recipientAddress) {
         // eslint-disable-next-line max-len
-        // let createTxCmd = `${this.chainClient} tx tokenswap create ${ethTxHash} ${senderEthAddress} ${amountTokens} ${recipientAddress} --from=${this.multisigAddress} --generate-only`;
-        // if (this.keyringBackend) {
-        //     createTxCmd = `${createTxCmd} --keyring-backend ${this.keyringBackend}`;
-        // }
-        const unsignedFile = `${this.basePath}/${this.fromAccount}unsigned.json`;
-        // const unsignedFile = temp.path({ prefix: 'unsigned-', suffix: '.json' });
-        // createTxCmd = `${createTxCmd} > ${unsignedFile}`;
-        //    swap (name, password, amount, ethTxHash, ethAddress, engAddress, callback) {
+        const unsignedFile = `${this.basePath}/${this.accountName}unsigned.json`;
         // eslint-disable-next-line max-len
         await commands.swap(this.multisigAddress, this.password, amountTokens, ethTxHash, senderEthAddress, recipientAddress, unsignedFile);
-        // await executeCommand(createTxCmd);
         return JSON.parse(await readFile(unsignedFile));
     }
 }

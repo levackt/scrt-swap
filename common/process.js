@@ -7,7 +7,7 @@ const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
 // const httpClient = axios.create({ baseURL: config.api });
 
 // this is just for me running on windows to be able to run commands inside the docker with the blockchain
-const docker = os.platform() === 'win32' ? 'docker exec -it swaptest3 /bin/bash' : '';
+const docker = os.platform() === 'win32' ? 'docker exec -it swaptest4 /bin/bash' : '';
 
 const cmd = {
     spawnProcess () {
@@ -21,7 +21,7 @@ const cmd = {
         return ptyProcess;
     },
 
-    spawnNoPassword (password, toRun, callback) {
+    spawnNoPassword (toRun, callback) {
         const ptyProcess = cmd.spawnProcess();
         ptyProcess.onExit((c) => {
             console.log(`exit: ${JSON.stringify(c)}`);
@@ -87,117 +87,61 @@ const cmd = {
         ptyProcess.write(toRun);
     },
 
-    // createKey (name, password, callback) {
-    //     const ptyProcess = cmd.spawnProcess();
-    //
-    //     let buildResponse = '';
-    //
-    //     ptyProcess.on('data', (data) => {
-    //         process.stdout.write(data);
-    //
-    //         // 0.37.9
-    //         if (data.includes('Enter a passphrase')) {
-    //             // process.stdout.write('Setting password to '+password);
-    //             ptyProcess.write(`${password}\r`);
-    //         }
-    //         // 0.37.9
-    //         if (data.includes('Repeat the passphrase')) {
-    //             // process.stdout.write('Confirming password to '+password);
-    //             ptyProcess.write(`${password}\r`);
-    //         }
-    //
-    //         // 0.38.x
-    //         if (data.includes('Enter keyring passphrase:')) {
-    //             // process.stdout.write('Setting password to '+password);
-    //             ptyProcess.write(`${password}\r`);
-    //         }
-    //
-    //         if (os.platform() !== 'win32') {
-    //             buildResponse += data;
-    //
-    //             if (data.split(' ').length === 24) {
-    //                 const tmpData = buildResponse.split('\n');
-    //
-    //                 let publicKey = '';
-    //                 let address = '';
-    //                 let seedPhrase = '';
-    //
-    //                 for (let i = 0; i < tmpData.length; i++) {
-    //                     // eslint-disable-next-line max-len
-    //                     if (tmpData[i].indexOf('NAME:') >= 0 && tmpData[i].indexOf('TYPE:') >= 0 && tmpData[i].indexOf('ADDRESS:') >= 0 && tmpData[i].indexOf('PUBKEY:') >= 0) {
-    //                         const arr = tmpData[i + 1].split('\t').filter(Boolean);
-    //                         address = arr[2].replace('\r', '');
-    //                         publicKey = arr[3].replace('\r', '');
-    //                         console.log(arr);
-    //                     }
-    //
-    //                     if (tmpData[i].split(' ').length === 24) {
-    //                         seedPhrase = tmpData[i].replace('\r', '');
-    //                     }
-    //                 }
-    //
-    //                 ptyProcess.write('exit\r');
-    //
-    //                 callback(null, {
-    //                     address,
-    //                     publicKey,
-    //                     seedPhrase
-    //                 });
-    //             }
-    //         } else if (data.includes('**Important**')) {
-    //             // process.stdout.write(data);
-    //             // eslint-disable-next-line max-len
-    //             const tmpData = data.replace(/\s\s+/g, ' ').replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '').split(' ');
-    //             const address = tmpData[6];
-    //             const publicKey = tmpData[7];
-    //             const seedPhrase = tmpData.slice(33, 57).join(' ');
-    //
-    //             ptyProcess.write('exit\r');
-    //             callback(null, {
-    //                 address,
-    //                 publicKey,
-    //                 seedPhrase
-    //             });
-    //         }
-    //
-    //         if (data.includes('override the existing name')) {
-    //             ptyProcess.write('n\r');
-    //             ptyProcess.write('exit\r');
-    //             callback('Symbol already exists', {});
-    //         }
-    //     });
-    //
-    //     // ptyProcess.write(`cd ${config.filePath}\r`);
-    //     ptyProcess.write(`${config.chainClient} keys add ${name}\r`);
-    // },
-
-    signTx (unsignedFile, password, multisigAddress, fromAccount, outputFile, callback) {
-        // eslint-disable-next-line max-len
-        const toRun = `${config.chainClient} tx sign ${unsignedFile} --multisig ${multisigAddress} --chain-id=${config.chainId} --from=${fromAccount} --output-document ${outputFile} --yes\r`;
-
-        cmd.spawnAndInputPassword(password, toRun, callback);
+    appendKeyring (command, keyring, terminate = true) {
+        const term = terminate ? '\r' : '';
+        return `${command} --keyring-backend ${keyring}${term}`;
     },
 
-    broadcast (signedTx, password, outputFile, callback) {
-        // eslint-disable-next-line max-len
-        const toRun = `${config.chainClient} tx broadcast ${signedTx} > ${outputFile}\r`;
-
-        cmd.spawnNoPassword(password, toRun, callback);
+    appendOutputFile (command, outputFile) {
+        return `${command} > ${outputFile}\r`;
     },
 
-    multisign (unsignedFile, password, fromAccount, sigs, signedFile, callback) {
+    signTx (unsignedFile, password, multisigAddress, fromAccount, sequence, outputFile, callback) {
+        // eslint-disable-next-line max-len
+        let toRun = `${config.chainClient} tx sign ${unsignedFile} --offline --account-number 8 --sequence ${sequence} --multisig ${multisigAddress} --chain-id=${config.chainId} --from=${fromAccount} --output-document ${outputFile} --yes`;
+
+        if (config.keyringBackend === 'test') {
+            toRun = cmd.appendKeyring(toRun, config.keyringBackend);
+            cmd.spawnNoPassword(toRun, callback);
+        } else {
+            toRun += '\r';
+            cmd.spawnAndInputPassword(password, toRun, callback);
+        }
+    },
+
+    broadcast (signedTx, sequence, outputFile, callback) {
+        let toRun = `${config.chainClient} tx broadcast ${signedTx} -b async`;
+        toRun = cmd.appendOutputFile(toRun, outputFile);
+        cmd.spawnNoPassword(toRun, callback);
+    },
+
+    multisign (unsignedFile, fromAccount, sigs, sequence, signedFile, callback) {
         const sigString = sigs.join(' ');
 
         // eslint-disable-next-line max-len
-        const toRun = `${config.chainClient} tx multisign ${unsignedFile} ${fromAccount} --chain-id=${config.chainId} --yes ${sigString} > ${signedFile}\r`;
+        let toRun = `${config.chainClient} tx multisign --offline --account-number 8 --sequence ${sequence}  ${unsignedFile} ${fromAccount} --chain-id=${config.chainId} --yes ${sigString}`;
 
-        cmd.spawnNoPassword(password, toRun, callback);
+        if (config.keyringBackend === 'test') {
+            toRun = cmd.appendKeyring(toRun, config.keyringBackend, false);
+            toRun = cmd.appendOutputFile(toRun, signedFile);
+        } else {
+            toRun = cmd.appendOutputFile(toRun, signedFile);
+        }
+        cmd.spawnNoPassword(toRun, callback);
     },
 
     swap (name, password, amount, ethTxHash, ethAddress, engAddress, outputfile, callback) {
         // eslint-disable-next-line max-len
-        const toRun = `${config.chainClient} tx tokenswap create ${ethTxHash} ${ethAddress} ${amount} ${engAddress} --from ${name} --chain-id=${config.chainId} --generate-only > ${outputfile}\r`;
-        cmd.spawnNoPassword(password, toRun, callback);
+        let toRun = `${config.chainClient} tx tokenswap create ${ethTxHash} ${ethAddress} ${amount} ${engAddress} --from ${name} --chain-id=${config.chainId} --generate-only`;
+
+        if (config.keyringBackend === 'test') {
+            toRun = cmd.appendKeyring(toRun, config.keyringBackend, false);
+            toRun = cmd.appendOutputFile(toRun, outputfile);
+            cmd.spawnNoPassword(toRun, callback);
+        } else {
+            toRun = cmd.appendOutputFile(toRun, outputfile);
+            cmd.spawnAndInputPassword(password, toRun, callback);
+        }
     }
 };
 

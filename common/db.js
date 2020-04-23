@@ -1,6 +1,6 @@
-const logger = require('../common/logger');
 const { MongoClient } = require('mongodb');
 const Web3 = require('web3');
+const logger = require('../common/logger');
 const {
     SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_SIGNED, SWAP_STATUS_CONFIRMED
 } = require('./constants');
@@ -36,19 +36,34 @@ class Db {
      * Insert LogBurn event emitted by Ethereum
      *
      * @param {Swap} unsignedSwap
+     * @returns boolean
+     */
+    // eslint-disable-next-line class-methods-use-this
+    validateSwap (unsignedSwap) {
+        try {
+            if (!unsignedSwap.unsignedTx.value || !unsignedSwap.transactionHash) {
+                logger.error(`Error validating inserted swap. Details: ${unsignedSwap}`);
+                return false;
+            }
+            return unsignedSwap.status === SWAP_STATUS_UNSIGNED;
+        } catch (e) {
+            logger.error(`Error validating inserted swap. Error: ${e}. Details: ${unsignedSwap}`);
+            return false;
+        }
+    }
+
+    /**
+     * Insert LogBurn event emitted by Ethereum
+     *
+     * @param {Swap} unsignedSwap
      */
     async insertUnsignedSwap (unsignedSwap) {
-        if (!(unsignedSwap &&
-            unsignedSwap.unsignedTx &&
-            unsignedSwap.unsignedTx.value &&
-            unsignedSwap.transactionHash &&
-            unsignedSwap.status === SWAP_STATUS_UNSIGNED)) {
+        if (!this.validateSwap(unsignedSwap)) {
             throw new Error('Invalid unsigned swap');
         }
         const record = {
             ...unsignedSwap,
-            amount: unsignedSwap.amount.toString(),
-            nonce: unsignedSwap.amount.toString()
+            amount: unsignedSwap.amount.toString()
         };
         this.db.collection(SWAP_COLLECTION).insertOne(record);
     }
@@ -78,6 +93,7 @@ class Db {
 
     /**
      * Updates the swap status.
+     * @param transactionHash
      * @param mintTransactionHash - The Enigma Chain mint transaction hash
      * @param status - blockchain status
      */
@@ -127,7 +143,7 @@ class Db {
         const unsignedSwaps = await this.findAllByStatus(SWAP_STATUS_UNSIGNED);
         const aboveThresholdUnsignedSwaps = [];
         await Promise.all(unsignedSwaps.map(async (swap) => {
-            const { transactionHash, unsignedTx, status } = swap;
+            const { transactionHash, unsignedTx, status, sequence } = swap;
             // TODO: Consider indexing this field
             const query = { transactionHash: swap.transactionHash };
             // Slightly inefficient to fetch results instead on counting, but saves us from querying twice
@@ -138,7 +154,8 @@ class Db {
                     transactionHash,
                     unsignedTx,
                     status,
-                    signatures
+                    signatures,
+                    sequence
                 });
             }
         }));
