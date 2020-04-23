@@ -25,7 +25,7 @@ if (process.env.ROLE === 'operator' && !config.user) {
     throw new Error('OPERATOR_USER env variable required');
 }
 
-const tokenSwapClient = new CliSwapClient(config.chainClient, config.fromAccount, config.keyringBackend, config.multisigAddress);
+const tokenSwapClient = new CliSwapClient(config.chainClient, config.fromAccount, config.multisigAddress, config.password);
 
 (async () => {
     await db.init();

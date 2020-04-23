@@ -7,7 +7,7 @@
   "db_url": "mongodb://localhost:27017",
   "chainClient": "enigmacli",
   "fromAccount": "t1",
-  "broadcastInterval": 30000,
+  "broadcastInterval": 7000,
   "nbConfirmations": "2",
   "multisigThreshold": "2",
   "user": "operator1",
