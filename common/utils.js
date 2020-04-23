@@ -3,10 +3,9 @@ const cosmos = require('cosmos-lib');
 const fs = require('fs');
 const path = require('path');
 const util = require('util');
+const os = require('os');
 const logger = require('../common/logger');
 const config = require('./config');
-
-const os = require('os');
 
 function resolveTilde (filePath) {
     if (!filePath || typeof (filePath) !== 'string') {
@@ -27,10 +26,19 @@ async function sleep (time) {
     });
 }
 
-async function executeCommand (cmd) {
+/**
+ * @returns string
+ */
+async function executeCommand (cmd, toJson = true) {
     // todo timeout
-    logger.info(`Executing cmd : ${cmd} --output json`);
-    const result = await processSpawn(`${cmd} --output json`);
+
+    const addJsonOutput = toJson ? ' --output json' : '';
+
+    // workaround to be able to run commands inside a docker container
+    const appendDockerPostfix = config.docker ? '"' : '';
+
+    logger.info(`Executing cmd : ${cmd}${addJsonOutput}${appendDockerPostfix}`);
+    const result = await processSpawn(`${cmd}${addJsonOutput}${appendDockerPostfix}`);
     return result.stdout;
 }
 
