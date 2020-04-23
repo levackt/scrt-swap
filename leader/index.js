@@ -62,6 +62,10 @@ class Leader {
         return this.tokenSwapClient.sequenceNumber();
     }
 
+    async getAccountNumber () {
+        return this.tokenSwapClient.getAccountNumber();
+    }
+
     stopBroadcasting () {
         this.broadcasting = false;
     }
@@ -90,7 +94,7 @@ class Leader {
             for (const swap of signedSwaps) {
                 try {
                     const result = JSON.parse(
-                        await this.tokenSwapClient.broadcastTokenSwap(swap.signatures, swap.unsignedTx, swap.sequence).catch(
+                        await this.tokenSwapClient.broadcastTokenSwap(swap.signatures, swap.unsignedTx, swap.sequence, swap.accountNumber).catch(
                             async (error) => {
                                 logger.error(`Failed to append signatures, or broadcast transaction: ${error}`);
                                 await this.updateFailedSwap(swap.transactionHash);
@@ -132,6 +136,7 @@ class Leader {
     async run () {
         this.done = false;
         let sequenceNumber = parseInt(await this.getSequence(), 10);
+        const accountNumber = parseInt(await this.getAccountNumber(), 10);
         // let accountNumber = await this.getAccountNumber();
         // eslint-disable-next-line no-restricted-syntax
         for await (const logBurn of this.burnWatcher.watchBurnLog()) {
@@ -152,6 +157,7 @@ class Leader {
                     const unsignedSwap = {
                         ...logBurn,
                         sequence: sequenceNumber,
+                        accountNumber,
                         _id: logBurn.transactionHash,
                         mintTransactionHash: null,
                         unsignedTx,

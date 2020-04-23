@@ -1,6 +1,5 @@
 /* eslint-disable no-await-in-loop,no-undef,no-console */
 
-
 require('dotenv').config();
 const Web3 = require('web3');
 const { expect } = require('chai');
@@ -208,6 +207,5 @@ describe('EngSwap', () => {
             expect(fromDb.mintTransactionHash).to.not.be.empty;
             expect(fromDb.transactionHash).to.not.be.empty;
         }));
-
     }).timeout(testConfig.leaderSwapDelay * testConfig.numOfSwaps * 2);
 });

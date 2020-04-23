@@ -31,6 +31,21 @@ class CliSwapClient {
         );
     }
 
+    async getAccountNumber () {
+        const res = await executeCommand(`${this.chainClient} query account ${await this.getAccountAddress()}`).catch(
+            (error) => {
+                logger.error(`Failed to execute command to get sequence number: ${error}`);
+                throw new Error('Failed to get sequence number');
+            }
+        );
+        const parsed = JSON.parse(res);
+        if (!Object.prototype.hasOwnProperty.call(parsed.value, 'account_number')) {
+            logger.error(`Resulting account information doesn't contain sequence number: ${JSON.stringify(parsed)}`);
+            throw new Error('Failed to get account_number');
+        }
+        return parsed.value.account_number;
+    }
+
     async sequenceNumber () {
         const res = await executeCommand(`${this.chainClient} query account ${await this.getAccountAddress()}`).catch(
             (error) => {
@@ -62,7 +77,7 @@ class CliSwapClient {
     /**
      * @returns {string}
      */
-    async broadcastTokenSwap (signatures, unsignedTx, sequence) {
+    async broadcastTokenSwap (signatures, unsignedTx, sequence, accountNumber) {
         const unsignedFile = `${this.basePath}/${this.accountName}_${unsignedTx.value.msg[0].value.BurnTxHash}_unsigned.json`;
 
         await writeFile(unsignedFile, JSON.stringify(unsignedTx));
@@ -79,21 +94,21 @@ class CliSwapClient {
         ));
         const signedFile = `${this.basePath}/${this.accountName}_${unsignedTx.value.msg[0].value.BurnTxHash}signed.json`;
 
-        await commands.multisign(unsignedFile, this.accountName, sigFiles, sequence, signedFile);
+        await commands.multisign(unsignedFile, this.accountName, sigFiles, sequence, accountNumber, signedFile);
         // todo: verify signature some other way
 
         const outputFile = `${this.basePath}/${this.accountName}_${unsignedTx.value.msg[0].value.BurnTxHash}_broadcast.json`;
 
-        await commands.broadcast(signedFile, sequence, outputFile);
+        await commands.broadcast(signedFile, outputFile);
         return readFile(outputFile);
     }
 
-    async signTx (unsignedTx, sequence) {
+    async signTx (unsignedTx, sequence, accountNumber) {
         const unsignedFile = `${this.basePath}/${this.accountName}_unsigned_operator.json`;
         const signedFile = `${this.basePath}/${this.accountName}_sig_${unsignedTx.value.msg[0].value.BurnTxHash}.json`;
         await writeFile(unsignedFile, JSON.stringify(unsignedTx));
 
-        const resp = await commands.signTx(unsignedFile, this.password, this.multisigAddress, this.accountName, sequence, signedFile);
+        const resp = await commands.signTx(unsignedFile, this.password, this.multisigAddress, this.accountName, sequence, accountNumber, signedFile);
         logger.info(`resp: ${JSON.stringify(resp)}`);
         return readFile(signedFile);
     }

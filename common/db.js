@@ -143,7 +143,7 @@ class Db {
         const unsignedSwaps = await this.findAllByStatus(SWAP_STATUS_UNSIGNED);
         const aboveThresholdUnsignedSwaps = [];
         await Promise.all(unsignedSwaps.map(async (swap) => {
-            const { transactionHash, unsignedTx, status, sequence } = swap;
+            const { transactionHash, unsignedTx, status, sequence, accountNumber } = swap;
             // TODO: Consider indexing this field
             const query = { transactionHash: swap.transactionHash };
             // Slightly inefficient to fetch results instead on counting, but saves us from querying twice
@@ -155,7 +155,8 @@ class Db {
                     unsignedTx,
                     status,
                     signatures,
-                    sequence
+                    sequence,
+                    accountNumber
                 });
             }
         }));

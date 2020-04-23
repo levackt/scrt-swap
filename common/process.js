@@ -96,9 +96,9 @@ const cmd = {
         return `${command} > ${outputFile}\r`;
     },
 
-    signTx (unsignedFile, password, multisigAddress, fromAccount, sequence, outputFile, callback) {
+    signTx (unsignedFile, password, multisigAddress, fromAccount, sequence, accountNumber, outputFile, callback) {
         // eslint-disable-next-line max-len
-        let toRun = `${config.chainClient} tx sign ${unsignedFile} --offline --account-number 8 --sequence ${sequence} --multisig ${multisigAddress} --chain-id=${config.chainId} --from=${fromAccount} --output-document ${outputFile} --yes`;
+        let toRun = `${config.chainClient} tx sign ${unsignedFile} --offline --account-number ${accountNumber} --sequence ${sequence} --multisig ${multisigAddress} --chain-id=${config.chainId} --from=${fromAccount} --output-document ${outputFile} --yes`;
 
         if (config.keyringBackend === 'test') {
             toRun = cmd.appendKeyring(toRun, config.keyringBackend);
@@ -109,17 +109,17 @@ const cmd = {
         }
     },
 
-    broadcast (signedTx, sequence, outputFile, callback) {
+    broadcast (signedTx, outputFile, callback) {
         let toRun = `${config.chainClient} tx broadcast ${signedTx} -b async`;
         toRun = cmd.appendOutputFile(toRun, outputFile);
         cmd.spawnNoPassword(toRun, callback);
     },
 
-    multisign (unsignedFile, fromAccount, sigs, sequence, signedFile, callback) {
+    multisign (unsignedFile, fromAccount, sigs, sequence, accountNumber, signedFile, callback) {
         const sigString = sigs.join(' ');
 
         // eslint-disable-next-line max-len
-        let toRun = `${config.chainClient} tx multisign --offline --account-number 8 --sequence ${sequence}  ${unsignedFile} ${fromAccount} --chain-id=${config.chainId} --yes ${sigString}`;
+        let toRun = `${config.chainClient} tx multisign --offline --account-number ${accountNumber} --sequence ${sequence}  ${unsignedFile} ${fromAccount} --chain-id=${config.chainId} --yes ${sigString}`;
 
         if (config.keyringBackend === 'test') {
             toRun = cmd.appendKeyring(toRun, config.keyringBackend, false);

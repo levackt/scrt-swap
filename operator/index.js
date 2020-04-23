@@ -43,7 +43,7 @@ class Operator {
                 logger.info('Found swap', swap);
                 if (swap.status === SWAP_STATUS_UNSIGNED) {
                     try {
-                        const signature = await this.tokenSwapClient.signTx(swap.unsignedTx, swap.sequence);
+                        const signature = await this.tokenSwapClient.signTx(swap.unsignedTx, swap.sequence, swap.accountNumber);
                         await this.db.insertSignature(this.user, transactionHash, signature);
                         logger.info(`signed tx hash ${transactionHash}`);
                     } catch (e) {
