@@ -98,6 +98,10 @@ const config = convict({
         default: 'enigma',
         arg: 'prefix',
         env: 'PREFIX'
+    },
+    docker: {
+        format: Boolean,
+        default: false
     }
 });
 

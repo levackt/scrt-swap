@@ -34,8 +34,11 @@ async function executeCommand (cmd, toJson = true) {
 
     const addJsonOutput = toJson ? ' --output json' : '';
 
-    logger.info(`Executing cmd : ${cmd}${addJsonOutput}"`);
-    const result = await processSpawn(`${cmd}${addJsonOutput}"`);
+    // workaround to be able to run commands inside a docker container
+    const appendDockerPostfix = config.docker ? '"' : '';
+
+    logger.info(`Executing cmd : ${cmd}${addJsonOutput}${appendDockerPostfix}`);
+    const result = await processSpawn(`${cmd}${addJsonOutput}${appendDockerPostfix}`);
     return result.stdout;
 }
 

@@ -11,5 +11,6 @@
   "nbConfirmations": "2",
   "multisigThreshold": "2",
   "user": "operator1",
-  "dbName": "enigma-swap"
+  "dbName": "enigma-swap",
+  "docker": true
 }
