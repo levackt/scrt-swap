@@ -1,47 +1,67 @@
 {
-  "type": "cosmos-sdk/StdTx",
-  "value": {
-    "msg": [
-      {
-        "type": "tokenswap/TokenSwap",
-        "value": {
-          "BurnTxHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "transactionHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "unsignedTx": {
+    "type": "cosmos-sdk/StdTx",
+    "value": {
+      "msg": [
+        {
+          "type": "tokenswap/TokenSwap",
+          "value": {
+            "BurnTxHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "EthereumSender": "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
           "Receiver": "enigma1yuth8vrhemuu5m0ps0lv75yjhc9t86tf9hf83z",
           "AmountENG": "100.000000000000000000",
           "SignerAddr": "enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7"
-        }
-      }
-    ],
-    "fee": {
-      "amount": [],
-      "gas": "200000"
-    },
-    "signatures": [
-      {
-        "pub_key": {
-          "type": "tendermint/PubKeyMultisigThreshold",
-          "value": {
-            "threshold": "2",
-            "pubkeys": [
-              {
-                "type": "tendermint/PubKeySecp256k1",
-                "value": "A775u+10KkFaMvbOaxbTob5cdoP1NTltmXZeD3bkDi2W"
-              },
-              {
-                "type": "tendermint/PubKeySecp256k1",
-                "value": "Alwm579cgJrpWb4sS3H3jUAAUD66L/gZxgR9E6EmoPku"
-              },
-              {
-                "type": "tendermint/PubKeySecp256k1",
-                "value": "AjsPbbNWqLjrIPSBHGgqgEKpQ5rvnyGhmiRToRPuz+0f"
-              }
-            ]
           }
+        }
+      ],
+      "fee": {
+        "amount": [],
+        "gas": "200000"
+      },
+      "signatures": null,
+      "memo": ""
+    }
+  },
+  "status": 0,
+  "signatures": [
+    {
+      "_id": "0.ff5e9cf0ffa72",
+      "user": "operator0",
+      "transactionHash": "0x52fb6c0d3c59202c50b25ab22b0cdb738e04142c6602f1be403bbb9c6af61866",
+      "signature": {
+        "pub_key": {
+          "type": "tendermint/PubKeySecp256k1",
+          "value": "Alwm579cgJrpWb4sS3H3jUAAUD66L/gZxgR9E6EmoPku"
         },
-        "signature": "CgUIAxIBwBJAooEUUBobfXSLsfXk+TQiJdrgFJiY0xaR+GQ/XvdeaDYCTe31PTAAKXnj/+vxkP0hD6wjZ4rqaslAX2XJpfzXYBJAdnXq+ExTD9kH7PLU1QfMyidnBBHrodSNBz2AaTaHG7ow5fexmTyEWecYWUS67POHE212RUCFEqsS3mBi6D0v8Q=="
+        "signature": "0.ff5e9cf0ffa72"
       }
-    ],
-    "memo": ""
-  }
+    },
+    {
+      "_id": "0.530771361f9bf",
+      "user": "operator1",
+      "transactionHash": "0x52fb6c0d3c59202c50b25ab22b0cdb738e04142c6602f1be403bbb9c6af61866",
+      "signature": {
+        "pub_key": {
+          "type": "tendermint/PubKeySecp256k1",
+          "value": "Alwm579cgJrpWb4sS3H3jUAAUD66L/gZxgR9E6EmoPku"
+        },
+        "signature": "0.530771361f9bf"
+      }
+    },
+    {
+      "_id": "0.b7bd65e7c9ba3",
+      "user": "operator2",
+      "transactionHash": "0x52fb6c0d3c59202c50b25ab22b0cdb738e04142c6602f1be403bbb9c6af61866",
+      "signature": {
+        "pub_key": {
+          "type": "tendermint/PubKeySecp256k1",
+          "value": "Alwm579cgJrpWb4sS3H3jUAAUD66L/gZxgR9E6EmoPku"
+        },
+        "signature": "0.b7bd65e7c9ba3"
+      }
+    }
+  ],
+  "sequence": 1,
+  "accountNumber": "enigma1yuth8vrhemuu5m0ps0lv75yjhc9t86tf9hf83z"
 }
