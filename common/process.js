@@ -7,15 +7,19 @@ const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
 // const httpClient = axios.create({ baseURL: config.api });
 
 // this is just for me running on windows to be able to run commands inside the docker with the blockchain
-const docker = os.platform() === 'win32' ? 'docker exec -it swaptest4 /bin/bash' : '';
+// const docker = os.platform() === 'win32' ? 'docker exec -it swaptest4 /bin/bash' : '';
+
+function sleep (time) {
+    return new Promise(resolve => setTimeout(resolve, time));
+}
 
 const cmd = {
     spawnProcess () {
-        const ptyProcess = pty.spawn(shell, [docker], {
+        const ptyProcess = pty.spawn(shell, [], {
             name: Math.random().toString(36).substring(7),
             cols: 8000,
             rows: 30,
-            cwd: process.env.HOME,
+            cwd: process.cwd(),
             env: process.env
         });
         return ptyProcess;
@@ -24,7 +28,7 @@ const cmd = {
     spawnNoPassword (toRun, callback) {
         const ptyProcess = cmd.spawnProcess();
         ptyProcess.onExit((c) => {
-            console.log(`exit: ${JSON.stringify(c)}`);
+            // console.log(`exit: ${JSON.stringify(c)}`);
             if (c.exitCode === 0) {
                 callback(null, {});
             } else {
@@ -37,7 +41,9 @@ const cmd = {
             if (data.includes('ERROR')) {
                 callback(data, null);
             }
-            ptyProcess.write('exit\r');
+            sleep(200).then(() => {
+                ptyProcess.write('exit\r');
+            });
         });
 
         // ptyProcess.onExit(())
@@ -119,7 +125,7 @@ const cmd = {
         const sigString = sigs.join(' ');
 
         // eslint-disable-next-line max-len
-        let toRun = `${config.chainClient} tx multisign --offline --account-number ${accountNumber} --sequence ${sequence}  ${unsignedFile} ${fromAccount} --chain-id=${config.chainId} --yes ${sigString}`;
+        let toRun = `${config.chainClient} tx multisign --offline --account-number ${accountNumber} --sequence ${sequence} ${unsignedFile} ${fromAccount} --chain-id=${config.chainId} --yes ${sigString}`;
 
         if (config.keyringBackend === 'test') {
             toRun = cmd.appendKeyring(toRun, config.keyringBackend, false);
@@ -150,7 +156,8 @@ const commands = {
     swap: util.promisify(cmd.swap),
     signTx: util.promisify(cmd.signTx),
     broadcast: util.promisify(cmd.broadcast),
-    multisign: util.promisify(cmd.multisign)
+    multisign: util.promisify(cmd.multisign),
+    test: util.promisify(cmd.spawnNoPassword)
 };
 module.exports = {
     commands
@@ -163,13 +170,17 @@ module.exports = {
 //     // ).catch(
 //     //     error => console.log(`aww: ${error}`)
 //     // );
-//
-//     await commands.signTx('~/.enigmacli/t3_unsigned_operator.json', 'orejas123', 'enigma1c52jw3wtxjn90hylquqka2q687jh9jlfsy9skp', 't3',
-//         '~/.enigmacli/signed.txt').then(
+//     await commands.test('echo hello > /home/bob/yoyo.txt\r').then(
 //         data => console.log('yay')
 //     ).catch(
 //         error => console.log(`aww: ${error}`)
 //     );
+//     // await commands.signTx('~/.enigmacli/t3_unsigned_operator.json', 'orejas123', 'enigma1c52jw3wtxjn90hylquqka2q687jh9jlfsy9skp', 't3',
+//     //     '~/.enigmacli/signed.txt').then(
+//     //     data => console.log('yay')
+//     // ).catch(
+//     //     error => console.log(`aww: ${error}`)
+//     // );
 //
 //     console.log('boop');
 // })();
