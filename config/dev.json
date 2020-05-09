@@ -1,16 +1,17 @@
 {
   "networkId": "50",
   "pollingInterval": 1000,
-  "ethProviderUrl": "http://172.22.89.155:8545/",
+  "ethProviderUrl": "http://localhost:8545",
   "multisigAddress": "enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7",
   "keyringBackend": "test",
   "db_url": "mongodb://localhost:27017",
-  "chainClient": "enigmacli",
+  "chainClient": "docker exec -i swaptest4 bash -c \"enigmacli",
   "fromAccount": "t1",
   "broadcastInterval": 7000,
   "nbConfirmations": "2",
   "multisigThreshold": "2",
   "user": "operator1",
   "dbName": "enigma-swap",
+  "password": "",
   "docker": true
 }
