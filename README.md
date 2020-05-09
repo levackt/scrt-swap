@@ -29,7 +29,7 @@ This repo contains the implementation for the [Multisig Setup Proposal](https://
 
 ## Installation
 
-First ensure you are in a new and empty directory, and clone this repo
+Clone this repo
 
 ```sh
     git clone https://github.com/levackt/scrt-swap.git
