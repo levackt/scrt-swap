@@ -1,12 +1,14 @@
 {
   "networkId": "4",
-  "ethProviderUrl": "http://localhost:8545",
+  "ethProviderUrl": "https://rinkeby.infura.io/v3/f2115ad142704fbca5eeeeb9623ada12",
   "multisigAddress": "kamut1n4pc2w3us9n4axa0ppadd3kv3c0sar8cgwpte2",
   "db_url": "mongodb+srv://<username>:<password>@kamut-swap-udl9b.mongodb.net/test?retryWrites=true&w=majority",
   "chainClient": "kamutcli",
-  "fromAccount": "",
+  "fromAccount": "t1",
   "nbConfirmations": "2",
   "multisigThreshold": "2",
   "user": "operator5",
-  "dbName": "enigma-swap"
+  "dbName": "enigma-swap",
+  "bech32prefix": "kamut",
+  "password": ""
 }

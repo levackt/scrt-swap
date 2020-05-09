@@ -25,8 +25,8 @@ class CliSwapClient {
         // eslint-disable-next-line max-len
         return executeCommand(`${this.chainClient} keys show -a ${this.accountName} --keyring-backend ${config.keyringBackend}`, false).catch(
             (error) => {
-                logger.error(`Failed to execute command to get sequence number: ${error}`);
-                throw new Error('Failed to get sequence number');
+                logger.error(`Failed to execute command to get account address: ${error}`);
+                throw new Error('Failed to get account address');
             }
         );
     }
@@ -34,13 +34,13 @@ class CliSwapClient {
     async getAccountNumber () {
         const res = await executeCommand(`${this.chainClient} query account ${await this.getAccountAddress()}`).catch(
             (error) => {
-                logger.error(`Failed to execute command to get sequence number: ${error}`);
-                throw new Error('Failed to get sequence number');
+                logger.error(`Failed to execute command to get account number: ${error}`);
+                throw new Error('Failed to get account number');
             }
         );
         const parsed = JSON.parse(res);
         if (!Object.prototype.hasOwnProperty.call(parsed.value, 'account_number')) {
-            logger.error(`Resulting account information doesn't contain sequence number: ${JSON.stringify(parsed)}`);
+            logger.error(`Resulting account information doesn't contain account number: ${JSON.stringify(parsed)}`);
             throw new Error('Failed to get account_number');
         }
         return parsed.value.account_number;

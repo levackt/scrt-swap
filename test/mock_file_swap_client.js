@@ -2,8 +2,19 @@ const p1 = require('./data/p1.json');
 const unsignedTxData = require('./data/unsigned.json');
 const txData = require('./data/tx.json');
 const doneSwap = require('./data/done_swap.json');
+const qAccount = require('./data/q_account.json');
+const logger = require('../common/logger');
 
 class MockTokenSwapClient {
+
+    async sequenceNumber () {
+        return qAccount.sequence;
+    }
+
+    async getAccountNumber () {
+        return qAccount;
+    }
+
     async isSwapDone (ethTxHash) {
         const swap = await this.getTokenSwap(ethTxHash);
         return swap.done;
@@ -15,9 +26,9 @@ class MockTokenSwapClient {
         }
     }
 
-    async broadcastTokenSwap (signatures, unsignedTx) {
+    async broadcastTokenSwap (signatures, unsignedTx, sequence, accountNumber) {
         txData.txhash = Math.random().toString(16);
-        return txData;
+        return JSON.stringify(txData);
     }
 
     async signTx (unsignedTx) {

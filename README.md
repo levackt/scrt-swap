@@ -20,16 +20,38 @@ Development tasks:
 
 Operational tasks:
 
-- [X] Vote on operators and leader
+- [x] Vote on operators and leader
 - [x] Do we need a Minter module or are coins pre-mined?
-- [X] Operators configure their private key in their enigmad
-- [X] Leader creates the multigig address and imports operators public keys in enigmad
+- [ ] Operators configure their private key in their enigmad
+- [ ] Leader creates the multisig address and imports operators public keys in enigmad
 
 This repo contains the implementation for the [Multisig Setup Proposal](https://hackmd.io/AY1XxpRsQey1E-qB3iSyVg)
 
 ## Installation
 
-First ensure you are in a new and empty directory.
+Clone this repo
+
+```sh
+    git clone https://github.com/levackt/scrt-swap.git
+```
+
+#### Prerequisites
+- mongodb
+- Eth provider
+
+1. Install the dependencies
+   ```js
+   yarn
+   ```
+
+2. Edit the env as needed, for kamut's that config/test.json
+
+3. Start leader/operator with nodeEnv, defaults to prod
+   ```js
+   ROLE=leader node ./server.js --nodeEnv=test
+   ```
+
+## Installation - DEV
 
 1. Install the dependencies
    ```js
@@ -58,14 +80,13 @@ First ensure you are in a new and empty directory.
 
 6. Start the leader
     ```
-    # Set other environment variables in a .env file in the project root
-    ROLE=leader node ./server.js
+    ROLE=leader node ./server.js --nodeEnv=dev
     ```
    
 7. Start multiple operators
     ```
     # Set other environment variables in a .env file in the project root
-    ROLE=operator node ./server.js
+    ROLE=operator node ./server.js --nodeEnv=dev
     ```
    
 8. The `client` folder contains a frontend template that gets Web3 and imports the

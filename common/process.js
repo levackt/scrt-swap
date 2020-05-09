@@ -156,31 +156,8 @@ const commands = {
     swap: util.promisify(cmd.swap),
     signTx: util.promisify(cmd.signTx),
     broadcast: util.promisify(cmd.broadcast),
-    multisign: util.promisify(cmd.multisign),
-    test: util.promisify(cmd.spawnNoPassword)
+    multisign: util.promisify(cmd.multisign)
 };
 module.exports = {
     commands
 };
-
-// (async () => {
-//     // await commands.swap('enigma1c52jw3wtxjn90hylquqka2q687jh9jlfsy9skp', 'orejas123', '100000', '0x4a11cf554ad774f22cadd1b49cb8dfa10484976f80ace4c3f45886788c0cadae',
-//     //     '0xd03ea8624C8C5987235048901fB614fDcA89b117', 'enigma1um27s6ee62r8evnv7mz85fe4mz7yx6rkvzut0e', '~/.enigmacli/file.txt').then(
-//     //     data => console.log('yay')
-//     // ).catch(
-//     //     error => console.log(`aww: ${error}`)
-//     // );
-//     await commands.test('echo hello > /home/bob/yoyo.txt\r').then(
-//         data => console.log('yay')
-//     ).catch(
-//         error => console.log(`aww: ${error}`)
-//     );
-//     // await commands.signTx('~/.enigmacli/t3_unsigned_operator.json', 'orejas123', 'enigma1c52jw3wtxjn90hylquqka2q687jh9jlfsy9skp', 't3',
-//     //     '~/.enigmacli/signed.txt').then(
-//     //     data => console.log('yay')
-//     // ).catch(
-//     //     error => console.log(`aww: ${error}`)
-//     // );
-//
-//     console.log('boop');
-// })();

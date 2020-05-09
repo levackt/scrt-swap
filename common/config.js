@@ -11,13 +11,13 @@ const config = convict({
     },
     networkId: {
         format: String,
-        default: '50',
+        default: '1',
         arg: 'NETWORK_ID',
         env: 'NETWORK_ID'
     },
     pollingInterval: {
         format: Number,
-        default: 1000,
+        default: 30000,
         arg: 'POLLING_INTERVAL',
         env: 'POLLING_INTERVAL'
     },
@@ -59,7 +59,7 @@ const config = convict({
     },
     chainId: {
         format: String,
-        default: 'kamut-2',
+        default: 'enigma-testnet',
         arg: 'chain-id',
         env: 'CHAIN_ID'
     },
