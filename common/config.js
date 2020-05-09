@@ -11,13 +11,13 @@ const config = convict({
     },
     networkId: {
         format: String,
-        default: '50',
+        default: '1',
         arg: 'NETWORK_ID',
         env: 'NETWORK_ID'
     },
     pollingInterval: {
         format: Number,
-        default: 1000,
+        default: 30000,
         arg: 'POLLING_INTERVAL',
         env: 'POLLING_INTERVAL'
     },
@@ -28,7 +28,7 @@ const config = convict({
         env: 'ETH_PROVIDER'
     },
     multisigAddress: {
-        format: Number,
+        format: String,
         default: 'enigma12345',
         arg: 'multisigAddress',
         env: 'MULTISIG_ADDRESS'
@@ -102,6 +102,13 @@ const config = convict({
     docker: {
         format: Boolean,
         default: false
+    },
+    password: {
+        format: String,
+        default: '',
+        arg: 'keyringPassword',
+        env: 'KEYRING_PASSWORD',
+        sensitive: true
     }
 });
 
