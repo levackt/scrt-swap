@@ -10,26 +10,48 @@ Development tasks:
 - [x] Smart contract that burns ENG
 - [x] Leader that watches Ethereum, and unsigned tx to the db (mocked tx)
 - [x] Operator watches Ethereum and sign the tx (mocked sig)
-- [ ] Leader ratifies the tx and submits to enigma cli
-- [ ] Integrate enigmacli into the operator and learder (real tx and sig)
+- [x] Leader ratifies the tx and submits to enigma cli
+- [x] Integrate enigmacli into the operator and leader (real tx and sig)
 - [x] Frontend React template integrate with Web and the smart contract
-- [ ] Burn ENG form in frontend
+- [x] Burn ENG form in frontend
 - [x] End-to-end integration test
 - [ ] Stress test and dry run
 - [x] Minter module that authenticates the multisig address (is this needed?)
 
 Operational tasks:
 
-- [ ] Vote on operators and leader
+- [x] Vote on operators and leader
 - [x] Do we need a Minter module or are coins pre-mined?
 - [ ] Operators configure their private key in their enigmad
-- [ ] Leader creates the multigig address and imports operators public keys in enigmad
+- [ ] Leader creates the multisig address and imports operators public keys in enigmad
 
 This repo contains the implementation for the [Multisig Setup Proposal](https://hackmd.io/AY1XxpRsQey1E-qB3iSyVg)
 
 ## Installation
 
-First ensure you are in a new and empty directory.
+First ensure you are in a new and empty directory, and clone this repo
+
+```sh
+    git clone https://github.com/levackt/scrt-swap.git
+```
+
+#### Prerequisites
+- mongodb
+- Eth provider
+
+1. Install the dependencies
+   ```js
+   yarn
+   ```
+
+2. Edit the env as needed, for kamut's that config/test.json
+
+3. Start leader/operator with nodeEnv, defaults to prod
+   ```js
+   ROLE=leader node ./server.js --nodeEnv test
+   ```
+
+## Installation - DEV
 
 1. Install the dependencies
    ```js
@@ -58,14 +80,13 @@ First ensure you are in a new and empty directory.
 
 6. Start the leader
     ```
-    # Set other environment variables in a .env file in the project root
-    ROLE=leader node ./server.js
+    ROLE=leader node ./server.js --nodeEnv dev
     ```
    
 7. Start multiple operators
     ```
     # Set other environment variables in a .env file in the project root
-    ROLE=operator node ./server.js
+    ROLE=operator node ./server.js --nodeEnv dev
     ```
    
 8. The `client` folder contains a frontend template that gets Web3 and imports the
