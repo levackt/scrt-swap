@@ -29,7 +29,8 @@ async function sleep (time) {
 /**
  * @returns string
  */
-async function executeCommand (cmd, toJson = true) {
+//todo debugging toJson & new line
+async function executeCommand (cmd, toJson = false) {
     // todo timeout
 
     const addJsonOutput = toJson ? ' --output json' : '';
@@ -59,7 +60,9 @@ async function readFile (filePath) {
  * Checksum the recipient address.
  */
 function isValidCosmosAddress (recipient) {
-    if (!recipient || !recipient.startsWith(config.bech32prefix)) {
+    //todo why is config.bech32prefix undefined?
+    if (!recipient || !(recipient.startsWith("kamut") || recipient.startsWith("enigma"))) {
+        logger.error(`recipient=${recipient} has invalid prefix`)
         return false;
     }
     try {

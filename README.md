@@ -48,7 +48,7 @@ Clone this repo
 
 3. Start leader/operator with nodeEnv, defaults to prod
    ```js
-   ROLE=leader node ./server.js --nodeEnv test
+   ROLE=leader node ./server.js --nodeEnv=test
    ```
 
 ## Installation - DEV
@@ -80,13 +80,13 @@ Clone this repo
 
 6. Start the leader
     ```
-    ROLE=leader node ./server.js --nodeEnv dev
+    ROLE=leader node ./server.js --nodeEnv=dev
     ```
    
 7. Start multiple operators
     ```
     # Set other environment variables in a .env file in the project root
-    ROLE=operator node ./server.js --nodeEnv dev
+    ROLE=operator node ./server.js --nodeEnv=dev
     ```
    
 8. The `client` folder contains a frontend template that gets Web3 and imports the
