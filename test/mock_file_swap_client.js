@@ -33,7 +33,7 @@ class MockTokenSwapClient {
 
     async signTx (unsignedTx) {
         p1.signature = Math.random().toString(16);
-        return p1;
+        return JSON.stringify(p1);
     }
 
     generateTokenSwap (ethTxHash, senderEthAddress, amountTokens, recipientAddress) {

@@ -44,7 +44,7 @@ class Operator {
                 if (swap.status === SWAP_STATUS_UNSIGNED) {
                     try {
                         const signature = await this.tokenSwapClient.signTx(swap.unsignedTx, swap.sequence, swap.accountNumber);
-                        await this.db.insertSignature(this.user, transactionHash, signature);
+                        await this.db.insertSignature(this.user, transactionHash, JSON.parse(signature));
                         logger.info(`signed tx hash ${transactionHash}`);
                     } catch (e) {
                         logger.error(`Cannot sign unsigned tx ${swap.unsignedTx}, ${logBurn}, error: ${e}`);
