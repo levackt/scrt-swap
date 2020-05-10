@@ -54,7 +54,7 @@ async function writeFile (filePath, data) {
 }
 
 async function readFile (filePath) {
-    return promiseReadFile(resolveTilde(filePath));
+    return promiseReadFile(resolveTilde(filePath, 'utf-8'));
 }
 
 /**
