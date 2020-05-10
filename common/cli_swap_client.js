@@ -17,7 +17,7 @@ class CliSwapClient {
         this.chainClient = chainClient;
         this.accountName = fromAccount;
         this.multisigAddress = multisigAddress;
-        this.basePath = '~/.enigmacli';
+        this.basePath = config.tmpPath;
         this.password = password;
     }
 

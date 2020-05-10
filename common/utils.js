@@ -29,6 +29,7 @@ async function sleep (time) {
 /**
  * @returns string
  */
+
 //todo debugging toJson & new line
 async function executeCommand (cmd, toJson = false) {
     // todo timeout

@@ -10,10 +10,10 @@ Development tasks:
 - [x] Smart contract that burns ENG
 - [x] Leader that watches Ethereum, and unsigned tx to the db (mocked tx)
 - [x] Operator watches Ethereum and sign the tx (mocked sig)
-- [x] Leader ratifies the tx and submits to enigma cli
-- [x] Integrate enigmacli into the operator and leader (real tx and sig)
+- [X] Leader ratifies the tx and submits to enigma cli
+- [X] Integrate enigmacli into the operator and learder (real tx and sig)
 - [x] Frontend React template integrate with Web and the smart contract
-- [x] Burn ENG form in frontend
+- [X] Burn ENG form in frontend
 - [x] End-to-end integration test
 - [ ] Stress test and dry run
 - [x] Minter module that authenticates the multisig address (is this needed?)
