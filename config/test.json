@@ -7,7 +7,7 @@
   "fromAccount": "t1",
   "nbConfirmations": "2",
   "multisigThreshold": "2",
-  "user": "operator5",
+  "operatorUser": "operator5",
   "dbName": "enigma-swap",
   "bech32prefix": "kamut",
   "password": ""

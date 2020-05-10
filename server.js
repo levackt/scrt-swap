@@ -21,7 +21,7 @@ const fromBlock = 0; // TODO: Save to disk to resume after shutdown
 const provider = new Web3.providers.HttpProvider(config.ethProviderUrl);
 const db = new Db(config.db_url, config.dbName);
 
-if (process.env.ROLE === 'operator' && !config.user) {
+if (process.env.ROLE === 'operator' && !config.operatorUser) {
     throw new Error('OPERATOR_USER env variable required');
 }
 
@@ -36,7 +36,7 @@ const tokenSwapClient = new CliSwapClient(config.chainClient, config.fromAccount
     await sleep(3000);
 
     if (process.env.ROLE === 'operator') {
-        const operator = new Operator(tokenSwapClient, config.user, config.multisigAddress, db, provider, config.networkId,
+        const operator = new Operator(tokenSwapClient, config.operatorUser, config.multisigAddress, db, provider, config.networkId,
             config.nbConfirmations, fromBlock, config.pollingInterval);
         await operator.run();
     } else if (process.env.ROLE === 'leader') {
