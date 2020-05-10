@@ -53,7 +53,7 @@ const config = convict({
     },
     chainClient: {
         format: String,
-        default: 'enigmacli',
+        default: 'kamutcli',
         arg: 'chainClient',
         env: 'CHAIN_CLIENT'
     },
@@ -95,7 +95,7 @@ const config = convict({
     },
     bech32prefix: {
         format: String,
-        default: 'enigma',
+        default: 'kamut',
         arg: 'prefix',
         env: 'PREFIX'
     },
@@ -108,6 +108,13 @@ const config = convict({
         default: '',
         arg: 'keyringPassword',
         env: 'KEYRING_PASSWORD',
+        sensitive: true
+    },
+    tmpPath: {
+        format: String,
+        default: '~/.kamutcli',
+        arg: 'tmpPath',
+        env: 'TMP_PATH',
         sensitive: true
     }
 });

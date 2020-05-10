@@ -25,6 +25,7 @@ if (process.env.ROLE === 'operator' && !config.user) {
     throw new Error('OPERATOR_USER env variable required');
 }
 
+
 console.log(`config=${JSON.stringify(config)}`)
 
 const tokenSwapClient = new CliSwapClient(config.chainClient, config.fromAccount, config.multisigAddress, config.password);
