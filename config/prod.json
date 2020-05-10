@@ -7,7 +7,7 @@
   "fromAccount": "",
   "nbConfirmations": "2",
   "multisigThreshold": "2",
-  "user": "operator5",
+  "operatorUser": "operator5",
   "dbName": "enigma-swap",
   "password": ""
 }

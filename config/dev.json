@@ -10,7 +10,7 @@
   "broadcastInterval": 7000,
   "nbConfirmations": "2",
   "multisigThreshold": "2",
-  "user": "operator1",
+  "operatorUser": "operator1",
   "dbName": "enigma-swap",
   "password": "",
   "docker": true

@@ -87,11 +87,11 @@ const config = convict({
         arg: 'broadcastInterval',
         env: 'BROADCAST_INTERVAL'
     },
-    user: {
+    operatorUser: {
         format: String,
         default: '',
-        arg: 'user',
-        env: 'USER'
+        arg: 'operatorUser',
+        env: 'OPERATOR_USER'
     },
     bech32prefix: {
         format: String,
