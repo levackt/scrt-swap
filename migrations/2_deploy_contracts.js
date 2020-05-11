@@ -3,12 +3,9 @@ const EngToken = artifacts.require('./EngToken.sol');
 const web3 = require('web3');
 
 module.exports = async function (deployer) {
-    const tokenDecimals = web3.utils.toBN(18);
-    const tokenAmountToMint = web3.utils.toBN(1000000);
-    const supply = tokenAmountToMint.mul(web3.utils.toBN(10).pow(tokenDecimals));
-
-    await deployer.deploy(EngToken, supply);
+    await deployer.deploy(EngToken);
     const token = EngToken.address;
+    console.log('Deployed EngToken', EngToken.address);
     await deployer.deploy(EngSwap, token);
-    console.log('Deployed EngSwap', EngSwap);
+    console.log('Deployed EngSwap', EngSwap.address);
 };
