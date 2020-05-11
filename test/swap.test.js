@@ -32,6 +32,8 @@ describe('EngSwap', () => {
     const deployedSwap = EngSwap.networks[networkId];
     const deployedToken = EngToken.networks[networkId];
     const db = new Db('mongodb://localhost:27017/', 'enigma-swap');
+    const tokenDecimals = web3.utils.toBN(8);
+    const scrtDecimals = web3.utils.toBN(6);
 
     let swapContract;
     let tokenContract;
@@ -40,10 +42,10 @@ describe('EngSwap', () => {
     const operators = [];
     const recipient = 'enigma1um27s6ee62r8evnv7mz85fe4mz7yx6rkvzut0e';
 
-    const tokenAmountToBurn = web3.utils.toBN(10);
+    const tokenAmountToBurn = web3.utils.toBN(100);
     before(async () => {
         if (!deployedSwap || !deployedToken) {
-            throw new Error('Deployed contract not found');
+            throw new Error('Deployed contract not found for network: ' + networkId);
         }
         await db.init();
         await db.clear(SWAP_COLLECTION);
@@ -63,7 +65,6 @@ describe('EngSwap', () => {
         const balance = await tokenContract.methods.balanceOf(accounts[0]).call();
         console.log('The deployment balance', balance);
         for (let i = 1; i < 5; i++) {
-            const tokenDecimals = web3.utils.toBN(18);
             const tokenAmountToTransfer = web3.utils.toBN(100);
             const amount = tokenAmountToTransfer.mul(web3.utils.toBN(10).pow(tokenDecimals));
             await tokenContract.methods.transfer(accounts[i], amount).send({ from: accounts[0] });
@@ -81,9 +82,8 @@ describe('EngSwap', () => {
     const receipts = [];
     it('...should burn funds.', async () => {
         for (let i = 1; i < 5; i++) {
-            const tokenDecimals = web3.utils.toBN(18);
             const amount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
-            console.log('Burning funds from', accounts[i], 'to', recipient);
+            console.log('Burning', amount.toString(), 'from', accounts[i], 'to', recipient);
             const approveTx = await tokenContract.methods.approve(deployedSwap.address, amount).send({ from: accounts[i] });
             expect(web3.utils.toChecksumAddress(approveTx.from)).to.equal(accounts[i]);
             expect(approveTx.status).to.equal(true);
@@ -151,12 +151,11 @@ describe('EngSwap', () => {
 
     it('...should mint one to one.', async () => {
         const unsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
-        const tokenDecimals = web3.utils.toBN(8);
-        const amount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
+        const mintAmount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(scrtDecimals));
         for (const i in unsignedSwaps) {
             const swap = unsignedSwaps[i].unsignedTx.value.msg[0].value;
 
-            expect(swap.AmountENG).to.equal(amount.toString());
+            expect(swap.AmountENG).to.equal(mintAmount.toString());
         }
 
         // verify broadcast successfully
@@ -182,7 +181,6 @@ describe('EngSwap', () => {
 
             const mintTx = await client.getTokenSwap(swap.transactionHash);
             expect(mintTx).to.not.be.empty;
-            // todo check conversion in integ test, this only checks sample
             expect(mintTx.amount_uscrt[0].amount).to.equal('10');
         }
     });
