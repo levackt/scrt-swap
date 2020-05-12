@@ -17,14 +17,46 @@ import CssBaseline from "@material-ui/core/CssBaseline";
 import Grid from "@material-ui/core/Grid";
 import theme from "./theme";
 import TermsDialog from "./components/terms"
+import PropTypes from 'prop-types';
+import NumberFormat from 'react-number-format';
 
 const cosmos = require("cosmos-lib");
 const Web3 = require("web3");
 const prefix = process.env.REACT_APP_BECH32_PREFIX || 'enigma';
+const tokenDecimals = 8;
+const ETHERSCAN_MAINNET = 'http://etherscan.io/tx/';
+const ETHERSCAN_RINKEBY = 'http://rinkeby.etherscan.io/tx/';
 
 const StyledButton = styled(Button)`
   color: ${props => props.theme.palette.primary.main};
 `;
+
+function TokenFormat(props) {
+  const { inputRef, onChange, ...other } = props;
+
+  return (
+    <NumberFormat
+      {...other}
+      getInputRef={inputRef}
+      onValueChange={(values) => {
+        onChange({
+          target: {
+            name: props.name,
+            value: values.value,
+          },
+        });
+      }}
+      isNumericString
+      decimalScale="8"
+    />
+  );
+}
+
+TokenFormat.propTypes = {
+  inputRef: PropTypes.func.isRequired,
+  name: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
 
 class App extends Component {
   constructor(props) {
@@ -49,14 +81,15 @@ class App extends Component {
       receipt: null,
       infoMessage: null,
       errorMessage: null,
-      transactionHash: null
+      transactionHash: null,
+      etherscanUrl: ETHERSCAN_RINKEBY
     };
   }
 
   handleChange = event => {
     const { name, value, checked } = event.target;
     const { errors, tokenBalance } = this.state;
-
+    
     switch (name) {
       case "termsAccepted":
         if (!checked) {
@@ -72,8 +105,8 @@ class App extends Component {
         errors.swapAmount =
           value.length === 0 ||
           isNaN(value) ||
-          parseFloat(value) <= 0 ||
-          parseInt(Web3.utils.toWei(value, "ether")) > parseInt(tokenBalance)
+          parseFloat(value) < 1 ||
+          this.toGrains(value) > Web3.utils.toBN(tokenBalance)
             ? `Invalid swap amount`
             : "";
         break;
@@ -152,10 +185,16 @@ class App extends Component {
       this.setState({
         contract: instance,
         contractAddress: contractAddress,
-        tokenContract: tokenInstance
+        tokenContract: tokenInstance,
+        etherscanUrl: networkId === 1 ? ETHERSCAN_MAINNET : ETHERSCAN_RINKEBY
       },
       this.tokenBalance
     );
+  }
+
+  etherscanUrl = () => {
+    const {etherscanUrl, transactionHash} = this.state;
+    return etherscanUrl + transactionHash;
   }
 
   accountsHandler = accounts => {
@@ -197,7 +236,7 @@ class App extends Component {
       .then(result => {
         this.setState({
           tokenBalance: result,
-          maxSwap: Web3.utils.fromWei(result, "ether") + " ENG"
+          maxSwap: this.fromGrains(result)
         });
       });
   };
@@ -210,6 +249,14 @@ class App extends Component {
     this.setState({ errorMessage: message, infoMessage: null });
   };
 
+  toGrains = amount => {
+    return parseFloat(amount) * 10 ** tokenDecimals;
+  }
+
+  fromGrains = amount => {
+    return Web3.utils.toBN(amount) / Math.pow(10, tokenDecimals)
+  }
+
   initiateSwap = async () => {
     const {
       accounts,
@@ -219,8 +266,6 @@ class App extends Component {
       contractAddress
     } = this.state;
 
-    const swapAmountWei = Web3.utils.toWei(swapAmount, "ether");
-
     const self = this;
 
     const allowance = await tokenContract.methods
@@ -229,11 +274,13 @@ class App extends Component {
 
     this.setState({submitting: true});
 
+    const swapAmountGrains = this.toGrains(swapAmount)
+
     // Check if current allowance is sufficient, else approve
-    if (parseInt(allowance) < parseInt(swapAmountWei)) {
+    if (Web3.utils.toBN(allowance).lt(Web3.utils.toBN(swapAmountGrains))) {
       self.setInfoMessage("Approve the ENG Swap contract to transfer ENG");
       const approveTx = await tokenContract.methods
-        .approve(contractAddress, swapAmountWei)
+        .approve(contractAddress, swapAmountGrains)
         .send({
           from: accounts[0],
           gas: 500000
@@ -253,16 +300,17 @@ class App extends Component {
       }
     }
 
-    await contract.methods
+    this.emitter = await contract.methods
       .burnFunds(
         Web3.utils.fromAscii(self.state.recipientAddress),
-        swapAmountWei
+        swapAmountGrains
       )
       .send({
         from: accounts[0],
         gas: 1000000
       })
       .on("transactionHash", function(hash) {
+        self.setState({ transactionHash: hash });
         self.setInfoMessage(`Broadcasting tx`);
       })
       .on("receipt", function(receipt) {
@@ -274,10 +322,12 @@ class App extends Component {
         } else {
           self.setErrorMessage("Swap failed");
         }
+        this.emitter.removeAllListeners();
       })
       .on("error", function(contractError) {
         console.error(`Contract error: ${contractError.message}`);
         self.setErrorMessage("Swap failed. Check console for details.");
+        this.emitter.removeAllListeners();
       });
   };
 
@@ -315,9 +365,12 @@ class App extends Component {
                       <TextField
                         required
                         name="swapAmount"
-                        label="Amount to swap"
+                        label="ENG to swap"
                         autoFocus
                         onChange={this.handleChange}
+                        InputProps={{
+                          inputComponent: TokenFormat,
+                        }}
                       />
                     }
                     label={this.state.maxSwap}
@@ -382,10 +435,12 @@ class App extends Component {
                     <Alert severity="error">{this.state.errorMessage}</Alert>
                   )}
                   {this.state.transactionHash && (
-                    <Link
-                      href={"https://etherscan.io/tx/" + this.state.transactionHash}
-                    >View on Etherscan
-                    </Link>
+                    <StyledButton variant="contained" color="white" href="#contained-buttons">
+                      <Link
+                        href={this.etherscanUrl()}
+                      >View on Etherscan
+                      </Link>
+                    </StyledButton>
                   )}
                 </Grid>
               </Grid>
