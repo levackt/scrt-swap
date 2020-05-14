@@ -25,6 +25,7 @@ import Box from "./components/Box";
 
 const cosmos = require("cosmos-lib");
 const Web3 = require("web3");
+const BigNumber = require('bignumber.js');
 const prefix = process.env.REACT_APP_BECH32_PREFIX || 'enigma';
 const tokenDecimals = 8;
 const ETHERSCAN_MAINNET = 'http://etherscan.io/tx/';
@@ -65,7 +66,6 @@ class App extends Component {
   handleChange = event => {
     const { name, value, checked } = event.target;
     const { errors, tokenBalance } = this.state;
-    let newValue = value;
     
     switch (name) {
       case "termsAccepted":
@@ -84,12 +84,9 @@ class App extends Component {
             errors.swapAmount = "Invalid swap amount"
         } else if (parseFloat(value) < 1) {
             errors.swapAmount = "Minimum 1 ENG"
-        } else if (this.toGrains(value) > Web3.utils.toBN(tokenBalance)) {
+        } else if (Web3.utils.toBN(this.toGrains(value)).gt(Web3.utils.toBN(tokenBalance))) {
             errors.swapAmount = "Insufficient balance"
         } else {
-          if (value.includes(".") && value.substring(value.indexOf(".")).length > tokenDecimals) {
-            newValue = parseFloat(parseFloat(value, tokenDecimals).toFixed(tokenDecimals)).toString();
-          }
           errors.swapAmount = "";
         }
         break;
@@ -113,7 +110,7 @@ class App extends Component {
         break;
     }
 
-    this.setState({ errors, [name]: newValue });
+    this.setState({ errors, [name]: value });
   };
 
   handleSubmit = event => {
@@ -244,11 +241,11 @@ class App extends Component {
   };
 
   toGrains = amount => {
-    return parseFloat(amount) * 10 ** tokenDecimals;
+    return new BigNumber(amount).multipliedBy(10 ** tokenDecimals).toString()
   }
 
   fromGrains = amount => {
-    return Web3.utils.toBN(amount) / Math.pow(10, tokenDecimals)
+    return new BigNumber(amount).dividedBy(10 ** tokenDecimals).toString()
   }
 
   initiateSwap = async () => {
