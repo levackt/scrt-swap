@@ -9,16 +9,19 @@ import TextField from "@material-ui/core/TextField";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Checkbox from "@material-ui/core/Checkbox";
 import Link from "@material-ui/core/Link";
+import ArrowUpwardIcon from '@material-ui/icons/ArrowUpward';
+import { IconButton } from '@material-ui/core';
 import Typography from "@material-ui/core/Typography";
 import InputTwoToneIcon from "@material-ui/icons/InputTwoTone";
+import Tooltip from '@material-ui/core/Tooltip';
+import HelpOutlineIcon from '@material-ui/icons/HelpOutline';
 import styled, { ThemeProvider } from "styled-components";
 import Container from "@material-ui/core/Container";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Grid from "@material-ui/core/Grid";
 import theme from "./theme";
 import TermsDialog from "./components/terms"
-import PropTypes from 'prop-types';
-import NumberFormat from 'react-number-format';
+import Box from "./components/Box";
 
 const cosmos = require("cosmos-lib");
 const Web3 = require("web3");
@@ -30,33 +33,6 @@ const ETHERSCAN_RINKEBY = 'http://rinkeby.etherscan.io/tx/';
 const StyledButton = styled(Button)`
   color: ${props => props.theme.palette.primary.main};
 `;
-
-function TokenFormat(props) {
-  const { inputRef, onChange, ...other } = props;
-
-  return (
-    <NumberFormat
-      {...other}
-      getInputRef={inputRef}
-      onValueChange={(values) => {
-        onChange({
-          target: {
-            name: props.name,
-            value: values.value,
-          },
-        });
-      }}
-      isNumericString
-      decimalScale="8"
-    />
-  );
-}
-
-TokenFormat.propTypes = {
-  inputRef: PropTypes.func.isRequired,
-  name: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
 
 class App extends Component {
   constructor(props) {
@@ -89,6 +65,7 @@ class App extends Component {
   handleChange = event => {
     const { name, value, checked } = event.target;
     const { errors, tokenBalance } = this.state;
+    let newValue = value;
     
     switch (name) {
       case "termsAccepted":
@@ -102,13 +79,19 @@ class App extends Component {
         break;
 
       case "swapAmount":
-        errors.swapAmount =
-          value.length === 0 ||
-          isNaN(value) ||
-          parseFloat(value) < 1 ||
-          this.toGrains(value) > Web3.utils.toBN(tokenBalance)
-            ? `Invalid swap amount`
-            : "";
+
+        if(value.length === 0 || isNaN(value)) {
+            errors.swapAmount = "Invalid swap amount"
+        } else if (parseFloat(value) < 1) {
+            errors.swapAmount = "Minimum 1 ENG"
+        } else if (this.toGrains(value) > Web3.utils.toBN(tokenBalance)) {
+            errors.swapAmount = "Insufficient balance"
+        } else {
+          if (value.includes(".") && value.substring(value.indexOf(".")).length > tokenDecimals) {
+            newValue = parseFloat(parseFloat(value, tokenDecimals).toFixed(tokenDecimals)).toString();
+          }
+          errors.swapAmount = "";
+        }
         break;
 
       case "recipientAddress":
@@ -130,7 +113,7 @@ class App extends Component {
         break;
     }
 
-    this.setState({ errors, [name]: value });
+    this.setState({ errors, [name]: newValue });
   };
 
   handleSubmit = event => {
@@ -198,8 +181,17 @@ class App extends Component {
   }
 
   accountsHandler = accounts => {
-    this.setState({accounts: accounts});
-    this.tokenBalance();
+    if (accounts && accounts.length > 0) {
+      this.setState({
+        accounts: accounts,
+        errors: {
+          swapAmount: "",
+          recipientAddress: "",
+          termsAccepted: ""
+        }
+      })
+      this.tokenBalance();
+    }
   }
 
   componentDidMount = async () => {
@@ -230,15 +222,17 @@ class App extends Component {
   tokenBalance = async () => {
     const { accounts, tokenContract } = this.state;
 
-    await tokenContract.methods
-      .balanceOf(accounts[0])
-      .call()
-      .then(result => {
-        this.setState({
-          tokenBalance: result,
-          maxSwap: this.fromGrains(result)
+    if (accounts && accounts.length > 0 && tokenContract) {
+      await tokenContract.methods
+        .balanceOf(accounts[0])
+        .call()
+        .then(result => {
+          this.setState({
+            tokenBalance: result,
+            maxSwap: this.fromGrains(result)
+          });
         });
-      });
+    }
   };
 
   setInfoMessage = message => {
@@ -279,28 +273,29 @@ class App extends Component {
     // Check if current allowance is sufficient, else approve
     if (Web3.utils.toBN(allowance).lt(Web3.utils.toBN(swapAmountGrains))) {
       self.setInfoMessage("Approve the ENG Swap contract to transfer ENG");
-      const approveTx = await tokenContract.methods
+      this.approveEmitter = await tokenContract.methods
         .approve(contractAddress, swapAmountGrains)
         .send({
           from: accounts[0],
-          gas: 500000
+          gas: 100000
+        })
+        .on("confirmation", function(confirmationNumber, receipt) {
+          if (receipt.status === true) {
+            self.setInfoMessage("Transfer approved. Sign the burnFunds tx");
+            this.stopListeners();
+          } else {
+            self.setState({submitting: false});
+            self.setErrorMessage("Failed to approve ENG transfer");
+          }
         })
         .on("error", function(contractError) {
           console.error(`Contract error: ${contractError.message}`);
-          self.setErrorMessage("Failed to approve");
+          self.setErrorMessage("Failed to approve ENG transfer");
           self.setState({submitting: false});
         });
-
-      if (!approveTx.status) {
-        self.setErrorMessage("Failed to approve");
-        self.setState({submitting: false});
-        return;
-      } else {
-        self.setInfoMessage("Transfer approved. Sign the burnFunds tx");
-      }
     }
 
-    this.emitter = await contract.methods
+    this.burnEmitter = await contract.methods
       .burnFunds(
         Web3.utils.fromAscii(self.state.recipientAddress),
         swapAmountGrains
@@ -319,17 +314,26 @@ class App extends Component {
       .on("confirmation", function(confirmationNumber, receipt) {
         if (receipt.status === true) {
           self.setInfoMessage("Successfully swapped");
+          this.stopListeners();
         } else {
           self.setErrorMessage("Swap failed");
         }
-        this.emitter.removeAllListeners();
       })
       .on("error", function(contractError) {
         console.error(`Contract error: ${contractError.message}`);
         self.setErrorMessage("Swap failed. Check console for details.");
-        this.emitter.removeAllListeners();
       });
   };
+
+  stopListeners = () => {
+    if (this.burnEmitter) {
+      this.burnEmitter.removeAllListeners();
+    }
+
+    if (this.approveEmitter) {
+      this.approveEmitter.removeAllListeners();
+    }
+  }
 
   canSubmit = () => {
     return (
@@ -340,6 +344,16 @@ class App extends Component {
       this.validateForm(this.state.errors)
     );
   };
+
+  maxSwapAmount = () => {
+    const { tokenBalance } = this.state;
+    this.setState({swapAmount: this.fromGrains(tokenBalance)});
+  }
+
+  hasEng = () => {
+    const { tokenBalance } = this.state;
+    return tokenBalance && parseFloat(tokenBalance) > 0
+  }
 
   render() {
     const { errors } = this.state;
@@ -353,11 +367,18 @@ class App extends Component {
         <CssBaseline />
         <ThemeProvider theme={theme}>
           <div className="App">
-            <Typography component="h1" variant="h5" style={{ marginTop: 50 }}>
-              ENG <InputTwoToneIcon fontSize="small" /> SCRT
-            </Typography>
-            <p></p>
-            <form noValidate>
+            <Box
+              fontFamily="h6.fontFamily"
+              fontSize={{ xs: 'h6.fontSize', sm: 'h4.fontSize', md: 'h3.fontSize' }}
+              p={{ xs: 2, sm: 3, md: 4 }}
+            >
+              <Typography component="h1" variant="h5" style={{ marginTop: 50 }}>
+                ENG <InputTwoToneIcon fontSize="small" /> SCRT
+              </Typography>
+
+              <p></p>
+
+              <form noValidate>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <FormControlLabel
@@ -365,17 +386,26 @@ class App extends Component {
                       <TextField
                         required
                         name="swapAmount"
+                        id="swapAmount"
+                        disabled={!this.hasEng()}
                         label="ENG to swap"
+                        value={this.state.swapAmount || ""}
                         autoFocus
                         onChange={this.handleChange}
-                        InputProps={{
-                          inputComponent: TokenFormat,
-                        }}
                       />
                     }
                     label={this.state.maxSwap}
                     labelPlacement="bottom"
                   />
+                  
+                  <Tooltip title="Swap full ENG balance" aria-label="scrt">
+                    <IconButton
+                        disabled={!this.hasEng()}
+                        onClick={this.maxSwapAmount}
+                        >
+                        <ArrowUpwardIcon/>
+                      </IconButton>
+                  </Tooltip>
                 </Grid>
 
                 {errors.swapAmount.length > 0 && (
@@ -394,13 +424,18 @@ class App extends Component {
                         name="recipientAddress"
                         label="SCRT address"
                         onChange={this.handleChange}
+                        disabled={!this.hasEng()}
                       />
                     }
                     label=" SCRT"
                     labelPlacement="bottom"
                   />
+                  <Tooltip title="Learn how to create a Secret account" aria-label="scrt">
+                    <IconButton>
+                        <HelpOutlineIcon fontSize="small"/>
+                    </IconButton>
+                  </Tooltip>
                 </Grid>
-                
 
                 {errors.recipientAddress.length > 0 && (
                   <Grid item xs={12}>
@@ -426,7 +461,6 @@ class App extends Component {
                     Start Swap
                   </StyledButton>
                 </Grid>
-
                 <Grid item xs={12}>
                   {this.state.infoMessage && (
                     <Alert severity="info">{this.state.infoMessage}</Alert>
@@ -445,6 +479,7 @@ class App extends Component {
                 </Grid>
               </Grid>
             </form>
+            </Box>
           </div>
         </ThemeProvider>
       </Container>
