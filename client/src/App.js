@@ -2,17 +2,13 @@ import React, { Component } from "react";
 import EngSwapContract from "./contracts/EngSwap.json";
 import tokenContract from "./contracts/ERC20.json";
 import getWeb3 from "./getWeb3";
-import Alert from "@material-ui/lab/Alert";
 import "./App.css";
 import Button from "@material-ui/core/Button";
 import TextField from "@material-ui/core/TextField";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
-import Checkbox from "@material-ui/core/Checkbox";
-import Link from "@material-ui/core/Link";
 import ArrowUpwardIcon from '@material-ui/icons/ArrowUpward';
 import { IconButton } from '@material-ui/core';
 import Typography from "@material-ui/core/Typography";
-import InputTwoToneIcon from "@material-ui/icons/InputTwoTone";
 import Tooltip from '@material-ui/core/Tooltip';
 import HelpOutlineIcon from '@material-ui/icons/HelpOutline';
 import styled, { ThemeProvider } from "styled-components";
@@ -20,8 +16,12 @@ import Container from "@material-ui/core/Container";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Grid from "@material-ui/core/Grid";
 import theme from "./theme";
-import TermsDialog from "./components/terms"
+import TermsDialog from "./components/Terms"
 import Box from "./components/Box";
+// import Transaction from "./components/Transaction";
+import Snackbar from "./components/Snackbar";
+
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 const cosmos = require("cosmos-lib");
 const Web3 = require("web3");
@@ -40,12 +40,15 @@ class App extends Component {
     super(props);
 
     this.state = {
+      loading: false,
+      formValid: false,
+      snackbarOpen: false,
       accepted: false,
-      submitting: false,
       tokenBalance: null,
       swapAmount: null,
       recipientAddress: null,
       web3: null,
+      networkId: null,
       accounts: null,
       contract: null,
       contractAddress: null,
@@ -57,7 +60,6 @@ class App extends Component {
       },
       receipt: null,
       infoMessage: null,
-      errorMessage: null,
       transactionHash: null,
       etherscanUrl: ETHERSCAN_RINKEBY
     };
@@ -111,6 +113,7 @@ class App extends Component {
     }
 
     this.setState({ errors, [name]: value });
+    this.setState({formValid: this.canSubmit()})
   };
 
   handleSubmit = event => {
@@ -166,6 +169,7 @@ class App extends Component {
         contract: instance,
         contractAddress: contractAddress,
         tokenContract: tokenInstance,
+        networkId: networkId,
         etherscanUrl: networkId === 1 ? ETHERSCAN_MAINNET : ETHERSCAN_RINKEBY
       },
       this.tokenBalance
@@ -217,6 +221,7 @@ class App extends Component {
   };
 
   tokenBalance = async () => {
+    this.setState({loading: true});
     const { accounts, tokenContract } = this.state;
 
     if (accounts && accounts.length > 0 && tokenContract) {
@@ -230,15 +235,28 @@ class App extends Component {
           });
         });
     }
+    this.setState({loading: false});
   };
 
   setInfoMessage = message => {
-    this.setState({ infoMessage: message, errorMessage: null });
+    if (message) {
+      this.setState({ snackbarOpen: true, infoMessage: message, severity: "info"});
+    }
   };
 
+  setSuccessMessage = message => {
+    this.setState({ snackbarOpen: true, infoMessage: message, severity: "success"});
+  }
+
   setErrorMessage = message => {
-    this.setState({ errorMessage: message, infoMessage: null });
+    if (message) {
+      this.setState({ snackbarOpen: true, infoMessage: message, severity: "error"});
+    }
   };
+
+  snackbarClosed = () => {
+    this.setState({ snackbarOpen: false});
+  }
 
   toGrains = amount => {
     return new BigNumber(amount).multipliedBy(10 ** tokenDecimals).toString()
@@ -246,6 +264,15 @@ class App extends Component {
 
   fromGrains = amount => {
     return new BigNumber(amount).dividedBy(10 ** tokenDecimals).toString()
+  }
+
+  resetForm = () => {
+    this.setState({
+      formValid: false,
+      accepted: false,
+      swapAmount: null,
+      recipientAddress: null,
+    });
   }
 
   initiateSwap = async () => {
@@ -263,88 +290,85 @@ class App extends Component {
       .allowance(accounts[0], contractAddress)
       .call();
 
-    this.setState({submitting: true});
+    this.setState({loading: true});
 
     const swapAmountGrains = this.toGrains(swapAmount)
+    self.setInfoMessage("Open Metamask and sign the 'Approve' transaction");
 
     // Check if current allowance is sufficient, else approve
     if (Web3.utils.toBN(allowance).lt(Web3.utils.toBN(swapAmountGrains))) {
-      self.setInfoMessage("Approve the ENG Swap contract to transfer ENG");
-      this.approveEmitter = await tokenContract.methods
+      await tokenContract.methods
         .approve(contractAddress, swapAmountGrains)
         .send({
           from: accounts[0],
-          gas: 100000
+          gas: 50000
         })
-        .on("confirmation", function(confirmationNumber, receipt) {
+        .once("transactionHash", function(transactionHash) {
+          self.setInfoMessage("Broadcasting 'Approve ENG transfer'");
+        })
+        .once("confirmation", function(confirmationNumber, receipt) {
           if (receipt.status === true) {
-            self.setInfoMessage("Transfer approved. Sign the burnFunds tx");
-            this.stopListeners();
+            self.setInfoMessage("Approved. Sign the 'Burn' transaction");
           } else {
-            self.setState({submitting: false});
-            self.setErrorMessage("Failed to approve ENG transfer");
+            self.setErrorMessage("Failed to approve ENG burn");
           }
         })
-        .on("error", function(contractError) {
-          console.error(`Contract error: ${contractError.message}`);
-          self.setErrorMessage("Failed to approve ENG transfer");
-          self.setState({submitting: false});
+        .on("error", function(error) {
+          self.handleError(error);
         });
     }
 
-    this.burnEmitter = await contract.methods
+    await contract.methods
       .burnFunds(
         Web3.utils.fromAscii(self.state.recipientAddress),
         swapAmountGrains
       )
       .send({
         from: accounts[0],
-        gas: 1000000
+        gas: 100000
       })
-      .on("transactionHash", function(hash) {
-        self.setState({ transactionHash: hash });
-        self.setInfoMessage(`Broadcasting tx`);
+      .once("transactionHash", function(transactionHash) {
+        self.setInfoMessage("Broadcasting 'Burn' transaction");
       })
-      .on("receipt", function(receipt) {
+      .on("error", function(error) {
+        self.handleError(error);
+      }).then(function(receipt) {
         self.setState({ transactionHash: receipt.transactionHash });
-      })
-      .on("confirmation", function(confirmationNumber, receipt) {
         if (receipt.status === true) {
-          self.setInfoMessage("Successfully swapped");
-          this.stopListeners();
+          self.setSuccessMessage("ENG Burn confirmed");
+          self.tokenBalance();
         } else {
-          self.setErrorMessage("Swap failed");
+          self.setErrorMessage("ENG Burn failed");
         }
-      })
-      .on("error", function(contractError) {
-        console.error(`Contract error: ${contractError.message}`);
-        self.setErrorMessage("Swap failed. Check console for details.");
+        self.setState({loading: false});
       });
   };
 
-  stopListeners = () => {
-    if (this.burnEmitter) {
-      this.burnEmitter.removeAllListeners();
+  handleError = (txError) => {
+    console.error(`Contract error: ${txError.message}`);
+    if (txError.message && txError.message.includes("User denied transaction signature")) {
+      this.setErrorMessage("Failed to sign the transaction");
+    } else if ("insufficient funds"){
+      this.setErrorMessage("Deposit ETH for gas");
+    } else {
+      this.setErrorMessage("Swap failed. Check console logs.");
     }
-
-    if (this.approveEmitter) {
-      this.approveEmitter.removeAllListeners();
-    }
+    this.setState({loading: false});
   }
 
   canSubmit = () => {
-    return (
-      !this.state.submitting &&
+    const result = !this.state.loading &&
       this.state.accepted &&
       this.state.swapAmount > 0 &&
       this.state.recipientAddress &&
       this.validateForm(this.state.errors)
-    );
+    return result;
   };
 
   maxSwapAmount = () => {
-    const { tokenBalance } = this.state;
-    this.setState({swapAmount: this.fromGrains(tokenBalance)});
+    if (this.hasEng()) {
+      this.setState({swapAmount: this.fromGrains(this.state.tokenBalance)});
+    }
   }
 
   hasEng = () => {
@@ -353,7 +377,7 @@ class App extends Component {
   }
 
   render() {
-    const { errors } = this.state;
+    const { errors, loading } = this.state;
 
     if (!this.state.web3) {
       return <div>Loading Web3, accounts, and contract...</div>;
@@ -364,16 +388,14 @@ class App extends Component {
         <CssBaseline />
         <ThemeProvider theme={theme}>
           <div className="App">
+            <Typography component="h1" variant="h4" style={{ marginTop: 50, marginBottom: 10 }}>
+              Burn ENG for SCRT!
+            </Typography>
             <Box
               fontFamily="h6.fontFamily"
               fontSize={{ xs: 'h6.fontSize', sm: 'h4.fontSize', md: 'h3.fontSize' }}
               p={{ xs: 2, sm: 3, md: 4 }}
             >
-              <Typography component="h1" variant="h5" style={{ marginTop: 50 }}>
-                ENG <InputTwoToneIcon fontSize="small" /> SCRT
-              </Typography>
-
-              <p></p>
 
               <form noValidate>
               <Grid container spacing={2}>
@@ -385,7 +407,7 @@ class App extends Component {
                         name="swapAmount"
                         id="swapAmount"
                         disabled={!this.hasEng()}
-                        label="ENG to swap"
+                        label="ENG amount"
                         value={this.state.swapAmount || ""}
                         autoFocus
                         onChange={this.handleChange}
@@ -395,9 +417,8 @@ class App extends Component {
                     labelPlacement="bottom"
                   />
                   
-                  <Tooltip title="Swap full ENG balance" aria-label="scrt">
+                  <Tooltip title="Swap full ENG balance" aria-label="Swap full ENG balance">
                     <IconButton
-                        disabled={!this.hasEng()}
                         onClick={this.maxSwapAmount}
                         >
                         <ArrowUpwardIcon/>
@@ -419,6 +440,7 @@ class App extends Component {
                       <TextField
                         required
                         name="recipientAddress"
+                        value={this.state.recipientAddress || ""}
                         label="SCRT address"
                         onChange={this.handleChange}
                         disabled={!this.hasEng()}
@@ -427,7 +449,7 @@ class App extends Component {
                     label=" SCRT"
                     labelPlacement="bottom"
                   />
-                  <Tooltip title="Learn how to create a Secret account" aria-label="scrt">
+                  <Tooltip title="Secret recipient" aria-label="Secret recipient">
                     <IconButton>
                         <HelpOutlineIcon fontSize="small"/>
                     </IconButton>
@@ -442,41 +464,36 @@ class App extends Component {
                   </Grid>
                 )}
                 <Grid item xs={12}>
-                  <Checkbox
-                        onChange={this.handleChange}
-                        checked={this.state.accepted}
-                        name="termsAccepted"
-                        color="primary"
-                      />
-                  <TermsDialog></TermsDialog>
+                  <TermsDialog 
+                    handleChange={this.handleChange} 
+                    accepted={this.state.accepted}>
+                  </TermsDialog>
                 </Grid>
                 <Grid item xs={12}>
+
+                <div>
+                  {loading && (
+                    <CircularProgress
+                      size={15}
+                    />
+                  )}
                   <StyledButton color="primary"
                     onClick={this.handleSubmit}
                     disabled={!this.canSubmit()}
                   >
                     Start Swap
                   </StyledButton>
-                </Grid>
-                <Grid item xs={12}>
-                  {this.state.infoMessage && (
-                    <Alert severity="info">{this.state.infoMessage}</Alert>
-                  )}
-                  {this.state.errorMessage && (
-                    <Alert severity="error">{this.state.errorMessage}</Alert>
-                  )}
-                  {this.state.transactionHash && (
-                    <StyledButton variant="contained" color="white" href="#contained-buttons">
-                      <Link
-                        href={this.etherscanUrl()}
-                      >View on Etherscan
-                      </Link>
-                    </StyledButton>
-                  )}
+                  </div>
                 </Grid>
               </Grid>
             </form>
             </Box>
+            <Snackbar 
+              snackbarOpen={this.state.snackbarOpen} 
+              snackbarClosed={this.snackbarClosed}
+              severity={this.state.severity} 
+              message={this.state.infoMessage}
+              />
           </div>
         </ThemeProvider>
       </Container>
