@@ -388,7 +388,7 @@ class App extends Component {
         <CssBaseline />
         <ThemeProvider theme={theme}>
           <div className="App">
-            <Typography component="h1" variant="h4" style={{ marginTop: 50, marginBottom: 10 }}>
+            <Typography className="h1" component="h1" variant="h4" style={{ marginTop: 50, marginBottom: 10 }}>
               Burn ENG for SCRT!
             </Typography>
             <Box
