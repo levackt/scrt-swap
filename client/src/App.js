@@ -18,9 +18,7 @@ import Grid from "@material-ui/core/Grid";
 import theme from "./theme";
 import TermsDialog from "./components/Terms"
 import Box from "./components/Box";
-// import Transaction from "./components/Transaction";
 import Snackbar from "./components/Snackbar";
-
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 const cosmos = require("cosmos-lib");
@@ -48,6 +46,7 @@ class App extends Component {
       swapAmount: null,
       recipientAddress: null,
       web3: null,
+      web3Error: null,
       networkId: null,
       accounts: null,
       contract: null,
@@ -196,7 +195,14 @@ class App extends Component {
   }
 
   componentDidMount = async () => {
+    this.initWeb3();
+  };
+
+  initWeb3 = async () => {
+
     try {
+      this.setState({loading: true});
+      
       // Get network provider and web3 instance.
       const web3 = await getWeb3(this.accountsHandler, this.networkHandler);
 
@@ -216,9 +222,17 @@ class App extends Component {
       this.setErrorMessage(
         `Failed to load web3, accounts, or contract. Check console for details.`
       );
+      this.setState({web3Error: error});
       console.error(error);
+    } finally {
+      this.setState({loading: false});
     }
-  };
+  }
+  
+  enableWeb3 = async () => {
+    this.initWeb3();
+    window.location.reload();
+  }
 
   tokenBalance = async () => {
     this.setState({loading: true});
@@ -251,6 +265,8 @@ class App extends Component {
   setErrorMessage = message => {
     if (message) {
       this.setState({ snackbarOpen: true, infoMessage: message, severity: "error"});
+    } else {
+      this.setState({ snackbarOpen: false});
     }
   };
 
@@ -380,7 +396,49 @@ class App extends Component {
     const { errors, loading } = this.state;
 
     if (!this.state.web3) {
-      return <div>Loading Web3, accounts, and contract...</div>;
+      if (this.state.web3Error) {
+        return <div className="App">
+          <Typography className="h1" component="h1" variant="h4" style={{ marginTop: 50, marginBottom: 10 }}>
+            You're not connected to Metamask!
+          </Typography>
+          
+          {loading && (
+            <CircularProgress
+              size={15}
+            />
+          )}
+          <Button
+            onClick={this.enableWeb3}
+            disabled={loading}
+          >
+            <img src="metamask-fox.svg" width="100" height="100" alt="Retry Metamask"/>
+            Connect Metamask
+          </Button>
+          
+          <Snackbar 
+            snackbarOpen={this.state.snackbarOpen} 
+            snackbarClosed={this.snackbarClosed}
+            severity={this.state.severity} 
+            message={this.state.infoMessage}
+            />
+          </div>;
+      } else {
+        return <div className="App">
+          <Typography className="h1" component="h1" variant="h4" style={{ marginTop: 50, marginBottom: 10 }}>
+            Connecting to Metamask...
+            <CircularProgress
+                size={20}
+              />
+          </Typography>
+          
+          <Snackbar 
+            snackbarOpen={this.state.snackbarOpen} 
+            snackbarClosed={this.snackbarClosed}
+            severity={this.state.severity} 
+            message={this.state.infoMessage}
+            />
+          </div>;
+      }
     }
 
     return (
