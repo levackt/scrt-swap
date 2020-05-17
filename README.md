@@ -44,7 +44,7 @@ Clone this repo
    yarn
    ```
 
-2. Edit the env as needed, for kamut's that config/test.json
+2. Edit the environment as needed, for kamut's that config/test.json
 
 3. Start leader/operator with nodeEnv, defaults to prod
    ```js
@@ -94,6 +94,37 @@ Clone this repo
     public function. Usage specs and examples can be found in `swap.test.js`.
     When all the components are online, swaps can be tested by calling
     `burnFunds` using Remix or Web3, or by creating a page in the frontend.
+
+## Keeping the worker running
+
+The leader and operators should be fault tolerant and recover from errors such as network,
+database or blockchain connection failures.
+
+The worker will log such errors and exit, it is up to the host to keep it running with Docker or a process manager such as [PM2](https://pm2.keymetrics.io/docs/usage/process-management/).
+
+- Using PM2
+
+```sh
+# install pm2
+npm install -g pm2
+
+# start the server as an operator for eg
+ROLE=operator pm2 start 'node ./server.js --nodeEnv=test --chainId=kamut-2' --name "operator"
+
+# generate a startup script, note and copy the output
+pm2 startup
+
+# save the list of processes to respawn at machine reboot
+pm2 save
+
+# view process logs
+pm2 logs
+
+# restart, to reload config for example
+pm2 restart operator
+
+```
+
 
 ## FAQ
 

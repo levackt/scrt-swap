@@ -31,16 +31,20 @@ class Operator {
     stop () {
         this.burnWatcher.stop();
         this.done = true;
+        await sleep(10000);
+        process.exit(0);
     }
 
     async run () {
         this.done = false;
         for await (const logBurn of this.burnWatcher.watchBurnLog()) {
-            logger.info(`Operator: ${this.user}. found LogBurn event: ${logBurn}`);
+            logger.info(`Operator: ${this.user}. found LogBurn event: ${JSON.stringify(logBurn)}`);
             const { transactionHash } = logBurn;
             try {
                 const swap = await this.db.fetchSwap(transactionHash);
-                logger.info('Found swap', swap);
+                if (!swap) {
+                    throw new Error(`No record of swap for txHash=${transactionHash}`);
+                }
                 if (swap.status === SWAP_STATUS_UNSIGNED) {
                     try {
                         const signature = await this.tokenSwapClient.signTx(swap.unsignedTx, swap.sequence, swap.accountNumber);
@@ -55,9 +59,7 @@ class Operator {
             } catch (e) {
                 // If this happens, skipped LogBurn will have to be re-processed either by resetting fromBlock or manually
                 logger.error(`The operator found a LogBurn event unregistered by the Leader. Is the leader running? ${e}`);
-                // todo shutdown until leader is up again?
-                // just putting it to sleep for now
-                await sleep(this.pollingInterval);
+                this.stop();
             }
             if (this.done) {
                 logger.info('Stop called. Shutting down operator');

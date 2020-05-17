@@ -26,8 +26,6 @@ if (process.env.ROLE === 'operator' && !config.operatorUser) {
 }
 
 
-console.log(`config=${JSON.stringify(config)}`)
-
 const tokenSwapClient = new CliSwapClient(config.chainClient, config.fromAccount, config.multisigAddress, config.password);
 
 (async () => {
