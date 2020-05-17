@@ -31,7 +31,6 @@ class Operator {
     stop () {
         this.burnWatcher.stop();
         this.done = true;
-        await sleep(10000);
         process.exit(0);
     }
 
@@ -59,6 +58,7 @@ class Operator {
             } catch (e) {
                 // If this happens, skipped LogBurn will have to be re-processed either by resetting fromBlock or manually
                 logger.error(`The operator found a LogBurn event unregistered by the Leader. Is the leader running? ${e}`);
+                await sleep(10000);
                 this.stop();
             }
             if (this.done) {
