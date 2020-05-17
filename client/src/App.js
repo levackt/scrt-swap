@@ -26,6 +26,7 @@ const Web3 = require("web3");
 const BigNumber = require('bignumber.js');
 const prefix = process.env.REACT_APP_BECH32_PREFIX || 'enigma';
 const tokenDecimals = 8;
+BigNumber.config({ DECIMAL_PLACES: tokenDecimals })
 const ETHERSCAN_MAINNET = 'http://etherscan.io/tx/';
 const ETHERSCAN_RINKEBY = 'http://rinkeby.etherscan.io/tx/';
 
@@ -67,6 +68,7 @@ class App extends Component {
   handleChange = event => {
     const { name, value, checked } = event.target;
     const { errors, tokenBalance } = this.state;
+    let newValue = value;
     
     switch (name) {
       case "termsAccepted":
@@ -81,14 +83,22 @@ class App extends Component {
 
       case "swapAmount":
 
-        if(value.length === 0 || isNaN(value)) {
+        if(newValue.length === 0 || isNaN(newValue)) {
             errors.swapAmount = "Invalid swap amount"
-        } else if (parseFloat(value) < 1) {
-            errors.swapAmount = "Minimum 1 ENG"
-        } else if (Web3.utils.toBN(this.toGrains(value)).gt(Web3.utils.toBN(tokenBalance))) {
-            errors.swapAmount = "Insufficient balance"
         } else {
-          errors.swapAmount = "";
+          //trim extra decimal places
+          if (value.includes(".") && value.substring(".").length > tokenDecimals) {
+            const index = value.indexOf(".")
+            newValue = value.substring(0, index) + value.substring(index, index + tokenDecimals + 1)
+          }
+
+          if (parseFloat(newValue) < 1) {
+            errors.swapAmount = "Minimum 1 ENG"
+          } else if (Web3.utils.toBN(this.toGrains(newValue)).gt(Web3.utils.toBN(tokenBalance))) {
+              errors.swapAmount = "Insufficient balance"
+          } else {
+            errors.swapAmount = "";
+          }
         }
         break;
 
@@ -111,7 +121,7 @@ class App extends Component {
         break;
     }
 
-    this.setState({ errors, [name]: value });
+    this.setState({ errors, [name]: newValue });
     this.setState({formValid: this.canSubmit()})
   };
 
