@@ -69,6 +69,12 @@ class Db {
     }
 
     async insertSignature (user, transactionHash, signature) {
+        const query = { _id: signature.signature };
+        const exists = await this.db.collection(SIGNATURE_COLLECTION).findOne(query);
+        if (exists) {
+            logger.info(`Signature exists for txHash=${transactionHash}`)
+            return
+        }
         const record = {
             _id: signature.signature, user, transactionHash, signature
         };
