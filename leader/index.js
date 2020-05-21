@@ -144,7 +144,7 @@ class Leader {
                 const dbSwap = await this.db.fetchSwap(logBurn.transactionHash);
 
                 if (dbSwap) {
-                    logger.error('Swap already exists for ethTxHash=', logBurn.transactionHash);
+                    logger.error(`Swap already exists for ethTxHash=${logBurn.transactionHash}`);
                 } else {
                     const unsignedTx = await this.tokenSwapClient.generateTokenSwap(
                         logBurn.transactionHash,

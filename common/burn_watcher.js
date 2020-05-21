@@ -59,7 +59,7 @@ class BurnWatcher {
                 const tokenDecimals = Web3.utils.toBN(8);
 
                 const burnAmount = new BigNumber(evt.returnValues._amount).dividedBy(10 ** tokenDecimals);
-                const amount = burnAmount.multipliedBy(10 ** cosmosDecimals).toString();
+                const amount = parseInt(burnAmount.multipliedBy(10 ** cosmosDecimals).toString());
 
                 const cosmosAddress = Web3.utils.hexToAscii(evt.returnValues._to);
                 if (isValidCosmosAddress(cosmosAddress)) {
