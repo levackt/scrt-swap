@@ -170,7 +170,7 @@ class Leader {
                     await this.db.insertUnsignedSwap(unsignedSwap);
                 }
             } catch (e) {
-                logger.error(`Cannot create unsigned tx: ${logBurn}, error: ${e}`);
+                logger.error(`Cannot create unsigned tx: ${JSON.stringify(logBurn)}, error: ${e}`);
             }
             if (this.done) {
                 logger.info('Stop called. Shutting down leader');

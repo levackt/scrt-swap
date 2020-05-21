@@ -113,12 +113,12 @@ class CliSwapClient {
         return readFile(signedFile);
     }
 
-    /**
+  /**
    * Generates a token swap request.
    *
    * @param {*} ethTxHash The burn tx hash
    * @param {*} senderEthAddress Sender's ethereum address
-   * @param {*} amountTokens Number of tokens in wei burnt
+   * @param {*} amountTokens Number of tokens in grains burnt
    * @param {*} recipientAddress Address for newly minted tokens
    */
     async generateTokenSwap (ethTxHash, senderEthAddress, amountTokens, recipientAddress) {
