@@ -111,7 +111,10 @@ npm install -g pm2
 # start the server as an operator for eg
 ROLE=operator pm2 start 'node ./server.js --nodeEnv=test --chainId=kamut-2' --name "operator"
 
-# generate a startup script, note and copy the output
+# or as the leader, broadcasting with the multisig account called multi1
+ROLE=leader pm2 start 'node ./server.js --nodeEnv=test --chainId=kamut-2 --fromAccount=multi1' --name "leader"
+
+# generate a startup script, copy/paste the output as instructed
 pm2 startup
 
 # save the list of processes to respawn at machine reboot
