@@ -88,7 +88,7 @@ class CliSwapClient {
             async (signature) => {
                 const tempName = `${this.basePath}/${this.accountName}_signed_${signature.user}_${signature.transactionHash}.json`;
                 // eslint-disable-next-line no-await-in-loop
-                await writeFile(tempName, signature.signature);
+                await writeFile(tempName, JSON.stringify(signature.signature));
                 sigFiles.push(tempName);
             }
         ));
