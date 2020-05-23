@@ -3,7 +3,6 @@ const Web3 = require('web3');
 const EngSwap = require('../client/src/contracts/EngSwap.json');
 const { sleep, isValidCosmosAddress } = require('./utils');
 const logger = require('../common/logger');
-const BigNumber = require('bignumber.js');
 
 /**
  * @typedef {Object} LogBurn
@@ -54,19 +53,13 @@ class BurnWatcher {
                 // Always greater than 0 on mainnet
                 this.fromBlock = ((blockPosition > 0) ? blockPosition : 0) + 1;
 
-                // convert units, 6 decimals in SCRT and 8 in ENG
-                const cosmosDecimals = Web3.utils.toBN(6);
-                const tokenDecimals = Web3.utils.toBN(8);
-
-                const burnAmount = new BigNumber(evt.returnValues._amount).dividedBy(10 ** tokenDecimals);
-                const amount = parseInt(burnAmount.multipliedBy(10 ** cosmosDecimals).toString());
-
+                
                 const cosmosAddress = Web3.utils.hexToAscii(evt.returnValues._to);
                 if (isValidCosmosAddress(cosmosAddress)) {
                     const logBurn = {
                         transactionHash: evt.transactionHash,
                         from: Web3.utils.toChecksumAddress(evt.returnValues._from),
-                        amount: amount.toString(),
+                        amount: evt.returnValues._amount,
                         to: cosmosAddress,
                         nonce: evt.returnValues._nonce
                     };
