@@ -63,7 +63,9 @@ class CliSwapClient {
 
     async isSwapDone (ethTxHash) {
         const tokenSwap = await this.getTokenSwap(ethTxHash);
-        if (tokenSwap.length === 0 || tokenSwap.includes('ERROR')) {
+        if (tokenSwap.length === 0 || tokenSwap.includes('Unknown Ethereum tx hash')) {
+            return false;
+        } else if (tokenSwap.includes('ERROR')) {
             logger.error(`Returned tokenswap was empty or errored for tx hash: ${ethTxHash}`);
             throw new Error('Failed to get tokenswap for tx hash');
         }

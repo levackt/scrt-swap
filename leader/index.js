@@ -76,6 +76,13 @@ class Leader {
         );
     }
 
+    async retrySubmittedSwap (transactionHash) {
+        logger.info(`Retrying transactionHash=${transactionHash}`);
+        await this.db.updateSwapStatus(transactionHash, '', SWAP_STATUS_UNSIGNED).catch(
+            error => logger.error(`Failed to update value in database: ${error}`)
+        );
+    }
+
     async updateConfirmedTransaction (ethTxHash, mintTxHash) {
         await this.db.updateSwapStatus(ethTxHash, mintTxHash, SWAP_STATUS_CONFIRMED).catch(
             error => logger.error(`Failed to update value in database: ${error}`)
@@ -120,8 +127,14 @@ class Leader {
             const submittedTxs = await this.db.findAllByStatus(SWAP_STATUS_SUBMITTED);
             await Promise.all(
                 submittedTxs.map(async (swap) => {
-                    if (await this.tokenSwapClient.isSwapDone(swap.transactionHash)) {
-                        await this.updateConfirmedTransaction(swap.transactionHash, swap.mintTransactionHash);
+                    try {
+                        if (await this.tokenSwapClient.isSwapDone(swap.transactionHash)) {
+                            await this.updateConfirmedTransaction(swap.transactionHash, swap.mintTransactionHash);
+                        } else {
+                            await this.retrySubmittedSwap(swap.transactionHash);
+                        }
+                    } catch(error) {
+                        await this.updateFailedSwap(swap.transactionHash);
                     }
                 })
             );
