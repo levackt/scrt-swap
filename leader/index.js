@@ -134,6 +134,7 @@ class Leader {
                             await this.retrySubmittedSwap(swap.transactionHash);
                         }
                     } catch(error) {
+                        logger.error(`Failed to check swap status of transactionHash: ${swap.transactionHash}, error: ${e}`);
                         await this.updateFailedSwap(swap.transactionHash);
                     }
                 })
