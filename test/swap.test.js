@@ -151,7 +151,7 @@ describe('EngSwap', () => {
 
     it('...should mint one to one.', async () => {
         const unsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
-        const mintAmount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(scrtDecimals));
+        const mintAmount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
         for (const i in unsignedSwaps) {
             const swap = unsignedSwaps[i].unsignedTx.value.msg[0].value;
 

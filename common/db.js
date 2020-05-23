@@ -106,11 +106,6 @@ class Db {
     async updateSwapStatus (transactionHash, mintTransactionHash, status) {
         logger.info(`updating swap ethTxHash=${transactionHash}, mintTransactionHash=${mintTransactionHash}, \
         status=${status}`);
-        if (!(mintTransactionHash && status)) {
-            return;
-        } if (!status >= SWAP_STATUS_SIGNED && status <= SWAP_STATUS_CONFIRMED) {
-            throw new Error('Invalid status');
-        }
 
         const query = { _id: transactionHash };
 
