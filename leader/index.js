@@ -108,7 +108,7 @@ class Leader {
             attempts++;
             if (attempts < 10 && !done) {
                 logger.info(`statusCheck attempt ${attempts}`);
-                self.statusCheck(swap, result);
+                self.statusCheck(swap, result, attempts);
             }
         }, 1000)
     }
