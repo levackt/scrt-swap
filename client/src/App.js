@@ -143,6 +143,9 @@ class App extends Component {
 
   networkHandler = async (networkId) => {
     const {web3} = this.state;
+    if (!web3) {
+      return;
+    }
 
     const deployedNetwork = EngSwapContract.networks[networkId];
 
