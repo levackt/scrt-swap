@@ -114,7 +114,7 @@ class Db {
             if (err) {
                 throw err;
             }
-            logger.info(`Updates transactionHash=${transactionHash}`);
+            logger.info(`Updated transactionHash=${transactionHash}`);
         });
     }
 

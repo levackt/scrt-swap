@@ -78,7 +78,7 @@ class Leader {
 
     async retrySubmittedSwap (transactionHash) {
         logger.info(`Retrying transactionHash=${transactionHash}`);
-        await this.db.updateSwapStatus(transactionHash, '', SWAP_STATUS_UNSIGNED).catch(
+                await this.db.updateSwapStatus(transactionHash, '', SWAP_STATUS_UNSIGNED).catch(
             error => logger.error(`Failed to update value in database: ${error}`)
         );
     }
@@ -87,6 +87,31 @@ class Leader {
         await this.db.updateSwapStatus(ethTxHash, mintTxHash, SWAP_STATUS_CONFIRMED).catch(
             error => logger.error(`Failed to update value in database: ${error}`)
         );
+    }
+
+    async statusCheck(swap, result) {
+        const self = this;
+        var attempts = 1;
+        var done = false;
+        setTimeout(async function() {
+            try{
+                done = await self.tokenSwapClient.isSwapDone(swap.transactionHash)
+                if (done) {
+                    logger.info(`Completing txHash=${result.txhash}`);
+                    self.updateConfirmedTransaction(swap.transactionHash, result.txhash);
+                } else {
+                    logger.info(`Rechecking txHash=${result.txhash}`);
+                }
+            } catch (e) {
+                logger.error(`Swap not done yet: ${e}`);
+            }
+            
+            attempts++;
+            if (attempts < 10 && !done) {
+                logger.info(`statusCheck attempt ${attempts}`);
+                self.statusCheck(swap, result);
+            }
+        }, 1000)
     }
 
     // noinspection FunctionWithMultipleLoopsJS
@@ -110,6 +135,7 @@ class Leader {
                     );
                     if (result.txhash) {
                         await this.db.updateSwapStatus(swap.transactionHash, result.txhash, SWAP_STATUS_SUBMITTED);
+                        await this.statusCheck(swap, result);
                     } else {
                         logger.error(`Txhash not found in returned result: ${result}`);
                         await this.updateFailedSwap(swap.transactionHash);
