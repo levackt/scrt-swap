@@ -89,9 +89,8 @@ class Leader {
         );
     }
 
-    async statusCheck(swap, result) {
+    async statusCheck(swap, result, attempts = 1) {
         const self = this;
-        var attempts = 1;
         var done = false;
         setTimeout(async function() {
             try{
