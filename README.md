@@ -57,6 +57,8 @@ Clone this repo
    ```js
    yarn
    ```
+   To install yarn you can follow this guide.
+   [install yarn](https://linuxize.com/post/how-to-install-yarn-on-ubuntu-18-04/)
 
 2. In a new terminal session, run ganache:
     ```
