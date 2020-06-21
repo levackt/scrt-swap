@@ -80,6 +80,8 @@ describe('EngSwap', () => {
     });
 
     const receipts = [];
+    let expectedTotalBurnt;
+    let expectedBurnNonce = 0;
     it('...should burn funds.', async () => {
         for (let i = 1; i < 5; i++) {
             const amount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
@@ -91,6 +93,12 @@ describe('EngSwap', () => {
                 from: accounts[i],
                 gas: 1000000
             });
+            let burnNonce =  await swapContract.methods.burnNonce.call();
+            expect(expectedBurnNonce === burnNonce);
+            burnNonce++
+            
+            let totalBurnt = await swapContract.methods.totalBurnt.call();
+            expect(expectedTotalBurnt === totalBurnt);
             expect(web3.utils.toChecksumAddress(burnTx.from)).to.equal(accounts[i]);
             expect(burnTx.status).to.equal(true);
             receipts.push(burnTx);
