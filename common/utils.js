@@ -62,7 +62,7 @@ async function readFile (filePath) {
  */
 function isValidCosmosAddress (recipient) {
     //todo why is config.bech32prefix undefined?
-    if (!recipient || !(recipient.startsWith("kamut") || recipient.startsWith("enigma"))) {
+    if (!recipient || !(recipient.startsWith("kamut") || recipient.startsWith("secret"))) {
         logger.error(`recipient=${recipient} has invalid prefix`)
         return false;
     }
