@@ -17,7 +17,6 @@ const { sleep } = require('./common/utils');
 const config = require('./common/config');
 const logger = require('./common/logger');
 
-const fromBlock = 0; // TODO: Save to disk to resume after shutdown
 const provider = new Web3.providers.HttpProvider(config.ethProviderUrl);
 const db = new Db(config.db_url, config.dbName);
 
@@ -35,11 +34,11 @@ const tokenSwapClient = new CliSwapClient(config.chainClient, config.fromAccount
 
     if (process.env.ROLE === 'operator') {
         const operator = new Operator(tokenSwapClient, config.operatorUser, config.multisigAddress, db, provider, config.networkId,
-            config.nbConfirmations, fromBlock, config.pollingInterval);
+            config.nbConfirmations, config.fromBlock, config.pollingInterval);
         await operator.run();
     } else if (process.env.ROLE === 'leader') {
         const leader = new Leader(tokenSwapClient, config.multisigAddress, db, provider, config.networkId,
-            fromBlock, config.pollingInterval, config.multisigThreshold, config.broadcastInterval);
+            config.fromBlock, config.pollingInterval, config.multisigThreshold, config.broadcastInterval);
 
         (async () => {
             await leader.broadcastSignedSwaps();
