@@ -24,7 +24,7 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 const cosmos = require("cosmos-lib");
 const Web3 = require("web3");
 const BigNumber = require('bignumber.js');
-const prefix = process.env.REACT_APP_BECH32_PREFIX || 'enigma';
+const prefix = process.env.REACT_APP_BECH32_PREFIX || 'secret';
 const tokenDecimals = 8;
 BigNumber.config({ DECIMAL_PLACES: tokenDecimals })
 const ETHERSCAN_MAINNET = 'http://etherscan.io/tx/';
