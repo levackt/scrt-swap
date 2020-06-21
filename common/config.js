@@ -116,7 +116,13 @@ const config = convict({
         arg: 'tmpPath',
         env: 'TMP_PATH',
         sensitive: true
-    }
+    },
+    fromBlock: {
+        format: Number,
+        default: 0,
+        arg: 'fromBlock',
+        env: 'FROM_BLOCK'
+    },
 });
 
 const env = config.get('env');
