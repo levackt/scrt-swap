@@ -3,6 +3,11 @@ pragma solidity ^0.5.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
+/**
+ Contract to approve the transfer of ENG (Enigma ERC20 tokens) to a burn address,
+ emitting an event containing the intended recipient's Secret Network address
+ for the purpose of minting native coins on the Secret Network.
+ */
 contract EngSwap {
     using SafeMath for uint256;
 
@@ -44,9 +49,9 @@ contract EngSwap {
     }
 
     /*
-    * Burn funds and emit a LogBurn event for emission on the Enigma Chain
+    * Burn funds and emit a LogBurn event for emission on the Secret Network
     *
-    * @param _recipient: The intended recipient's Enigma Chain address.
+    * @param _recipient: The intended recipient's Secret Network address.
     * @param _amount: The amount of ENG tokens to be itemized.
     */
     function burnFunds(bytes memory _recipient, uint256 _amount)
