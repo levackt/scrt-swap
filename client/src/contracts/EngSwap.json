@@ -3190,6 +3190,44 @@
     "version": "0.5.16+commit.9c3226ce.Emscripten.clang"
   },
   "networks": {
+    "1": {
+      "events": {
+        "0x22592b4048f2c2551a49a6eb7a488c3596cb162d706872532025d19d04cdf393": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "_from",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "_to",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_nonce",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogBurn",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0xb9385880558a319fed0a79f0f7874d87a52176f4",
+      "transactionHash": "0xf30faacd357de92c443794c6382df1533795b8afc8ca609d5138728330c09861"
+    },
     "4": {
       "events": {
         "0x22592b4048f2c2551a49a6eb7a488c3596cb162d706872532025d19d04cdf393": {
