@@ -16,7 +16,7 @@ import Container from "@material-ui/core/Container";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Grid from "@material-ui/core/Grid";
 import theme from "./theme";
-import TermsDialog from "./components/Terms"
+import TermsDialog from "./components/TermsDialog"
 import Box from "./components/Box";
 import Snackbar from "./components/Snackbar";
 import CircularProgress from '@material-ui/core/CircularProgress';
