@@ -53,7 +53,7 @@ const config = convict({
     },
     chainClient: {
         format: String,
-        default: 'kamutcli',
+        default: 'secretcli',
         arg: 'chainClient',
         env: 'CHAIN_CLIENT'
     },
@@ -112,7 +112,7 @@ const config = convict({
     },
     tmpPath: {
         format: String,
-        default: '~/.kamutcli',
+        default: '~/.secretcli',
         arg: 'tmpPath',
         env: 'TMP_PATH',
         sensitive: true

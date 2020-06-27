@@ -1,13 +1,13 @@
 {
-  "networkId": "4",
+  "networkId": "1",
   "ethProviderUrl": "http://localhost:8545",
-  "multisigAddress": "kamut1n4pc2w3us9n4axa0ppadd3kv3c0sar8cgwpte2",
+  "multisigAddress": "secret1rh6u3jjan72gleyrvft579xvj8c4006ur8xuxs",
   "db_url": "mongodb+srv://<username>:<password>@kamut-swap-udl9b.mongodb.net/test?retryWrites=true&w=majority",
-  "chainClient": "kamutcli",
+  "chainClient": "secretcli",
   "fromAccount": "",
-  "nbConfirmations": "2",
-  "multisigThreshold": "2",
+  "nbConfirmations": "4",
+  "multisigThreshold": "3",
   "operatorUser": "operator5",
-  "dbName": "enigma-swap",
+  "dbName": "secret-swap-prod",
   "password": ""
 }
