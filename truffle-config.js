@@ -31,6 +31,13 @@ module.exports = {
           `https://ropsten.infura.io/v3/${process.env.INFURA_ID}`
         ),
       network_id: 3
+    },
+    live: {
+      provider: () => new HDWalletProvider(`${process.env.MNEMONIC}`, 
+          `https://mainnet.infura.io/v3/${process.env.INFURA_ID}`),
+      network_id: 1,
+      gasPrice: 55000000000,
+      gas: 2000000,
     }
   },
   mocha: {
