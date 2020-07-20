@@ -2,7 +2,7 @@ const { MongoClient } = require('mongodb');
 const Web3 = require('web3');
 const logger = require('../common/logger');
 const {
-    SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_SIGNED, SWAP_STATUS_CONFIRMED
+    SWAP_STATUS_UNSIGNED, SWAP_STATUS_SUBMITTED, SWAP_STATUS_FAILED
 } = require('./constants');
 
 const SWAP_COLLECTION = 'swap';
@@ -123,8 +123,18 @@ class Db {
      *
      * @returns {Promise<Array<Swap>>}
      */
-    async findAllByStatus (status) {
-        const query = { status };
+    async findAllByStatus (status, limit=10) {        
+        const query = { status };        
+        const result = await this.db.collection(SWAP_COLLECTION).find(query).limit(limit).sort({sequence: 1});
+        const swaps = await result.toArray();
+        for (const swap of swaps) {
+            swap.amount = Web3.utils.toBN(swap.amount);
+            swap.nonce = Web3.utils.toBN(swap.nonce);
+        }
+        return swaps;
+    }
+    async findAllByStatuses (statuses) {
+        const query = { status: { $in: statuses } };        
         const result = await this.db.collection(SWAP_COLLECTION).find(query);
         const swaps = await result.toArray();
         for (const swap of swaps) {
@@ -138,10 +148,11 @@ class Db {
      * Finds above threshold swap (multisig tx candidates)
      *
      * @param {number} threshold
+     * @param {number} limit maximum number of swaps to return, 0 for unlimited
      * @returns {Promise<Array<AboveThresholdUnsignedSwap>>}
      */
-    async findAboveThresholdUnsignedSwaps (threshold) {
-        const unsignedSwaps = await this.findAllByStatus(SWAP_STATUS_UNSIGNED);
+    async findAboveThresholdUnsignedSwaps (threshold, limit=10) {
+        const unsignedSwaps = await this.findAllByStatus(SWAP_STATUS_UNSIGNED, limit);
         const aboveThresholdUnsignedSwaps = [];
         await Promise.all(unsignedSwaps.map(async (swap) => {
             const { transactionHash, unsignedTx, status, sequence, accountNumber } = swap;
@@ -159,7 +170,7 @@ class Db {
                     sequence,
                     accountNumber
                 });
-            }
+            } 
         }));
         return aboveThresholdUnsignedSwaps;
     }

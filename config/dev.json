@@ -2,16 +2,17 @@
   "networkId": "50",
   "pollingInterval": 1000,
   "ethProviderUrl": "http://localhost:8545",
-  "multisigAddress": "enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7",
+  "multisigAddress": "secret1gadmtfc86zdrnwyutzyfu8863ms74s7wz7pj65",
   "keyringBackend": "test",
   "db_url": "mongodb://localhost:27017",
-  "chainClient": "enigmacli",
-  "fromAccount": "t1",
+  "chainClient": "secretcli",
+  "fromAccount": "smt1",
   "broadcastInterval": 7000,
   "nbConfirmations": "2",
   "multisigThreshold": "2",
   "operatorUser": "operator1",
   "dbName": "enigma-swap",
+  "bech32prefix": "secret",
   "password": "",
-  "docker": true
+  "docker": false
 }

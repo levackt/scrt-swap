@@ -3,28 +3,6 @@
 This set of tools provides a reasonably secure mechanism for burning ENG on Ethereum, and minting
 SCRT 1-to-1 on the Enigma chain. 
 
-## Work in Progress
-
-Development tasks:
-
-- [x] Smart contract that burns ENG
-- [x] Leader that watches Ethereum, and unsigned tx to the db (mocked tx)
-- [x] Operator watches Ethereum and sign the tx (mocked sig)
-- [X] Leader ratifies the tx and submits to enigma cli
-- [X] Integrate enigmacli into the operator and learder (real tx and sig)
-- [x] Frontend React template integrate with Web and the smart contract
-- [X] Burn ENG form in frontend
-- [x] End-to-end integration test
-- [ ] Stress test and dry run
-- [x] Minter module that authenticates the multisig address (is this needed?)
-
-Operational tasks:
-
-- [x] Vote on operators and leader
-- [x] Do we need a Minter module or are coins pre-mined?
-- [ ] Operators configure their private key in their enigmad
-- [ ] Leader creates the multisig address and imports operators public keys in enigmad
-
 This repo contains the implementation for the [Multisig Setup Proposal](https://hackmd.io/AY1XxpRsQey1E-qB3iSyVg)
 
 ## Installation
@@ -38,6 +16,9 @@ Clone this repo
 #### Prerequisites
 - mongodb
 - Eth provider
+- Yarn: 1.22.*
+- Node: v12.*
+
 
 1. Install the dependencies
    ```js
@@ -129,11 +110,3 @@ pm2 logs
 pm2 restart operator
 
 ```
-
-
-## FAQ
-
-* __How do I use this with the Ganache-CLI?__
-
-    It's as easy as modifying the config file! [Check out our documentation on adding network configurations](http://truffleframework.com/docs/advanced/configuration#networks). Depending on the port you're using, you'll also need to update line 29 of `client/src/utils/getWeb3.js`.
-

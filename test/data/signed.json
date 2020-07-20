@@ -9,9 +9,9 @@
           "value": {
             "BurnTxHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "EthereumSender": "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
-          "Receiver": "enigma1yuth8vrhemuu5m0ps0lv75yjhc9t86tf9hf83z",
+          "Receiver": "secret1an0d4scr5zrwyjywpdxlq80uvr7jnu2emp3n65",
           "AmountENG": "100.000000000000000000",
-          "SignerAddr": "enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7"
+          "SignerAddr": "secret1an0d4scr5zrwyjywpdxlq80uvr7jnu2emp3n65"
           }
         }
       ],
@@ -63,5 +63,5 @@
     }
   ],
   "sequence": 1,
-  "accountNumber": "enigma1yuth8vrhemuu5m0ps0lv75yjhc9t86tf9hf83z"
+  "accountNumber": "secret1an0d4scr5zrwyjywpdxlq80uvr7jnu2emp3n65"
 }

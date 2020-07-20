@@ -42,6 +42,7 @@ class Operator {
             try {
                 const swap = await this.db.fetchSwap(transactionHash);
                 if (!swap) {
+                    logger.error(`Operator ${this.user} found a LogBurn event unregistered by the Leader. Is the leader running?`);
                     throw new Error(`No record of swap for txHash=${transactionHash}`);
                 }
                 if (swap.status === SWAP_STATUS_UNSIGNED) {
@@ -57,7 +58,7 @@ class Operator {
                 }
             } catch (e) {
                 // If this happens, skipped LogBurn will have to be re-processed either by resetting fromBlock or manually
-                logger.error(`The operator found a LogBurn event unregistered by the Leader. Is the leader running? ${e}`);
+                logger.error(`Operator failed to sign. ${e}`);
                 await sleep(10000);
                 this.stop();
             }

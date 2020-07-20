@@ -14,7 +14,7 @@
 //                         {
 //                             BurnTxHash: '0x16cfbd19027c99d0f8bde7dc4dc0d22fff029d503176d134ad153d03bbdc564f',
 //                             EthereumSender: '0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0',
-//                             Receiver: 'enigma1um27s6ee62r8evnv7mz85fe4mz7yx6rkvzut0e',
+//                             Receiver: 'secret1an0d4scr5zrwyjywpdxlq80uvr7jnu2emp3n65',
 //                             AmountENG: '1000000000.000000000000000000',
 //                             SignerAddr: 'enigma1c52jw3wtxjn90hylquqka2q687jh9jlfsy9skp'
 //                         }

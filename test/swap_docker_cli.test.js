@@ -19,12 +19,12 @@ async function sleep (ms) {
 }
 
 describe('EngSwap', () => {
-    const multisigAddress = process.env.MULTISIG_ADDRESS || 'enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7';
+    const multisigAddress = process.env.MULTISIG_ADDRESS || 'secret1an0d4scr5zrwyjywpdxlq80uvr7jnu2emp3n65';
     const ethHost = process.env.ETH_HOST || 'localhost';
     const ethPort = process.env.ETH_PORT || '8545';
     const networkId = process.env.NETWORK_ID || '50';
     const leaderAccount = 'smt1';
-    const chainClient = 'docker exec -i swaptest4 bash -c "enigmacli';
+    const chainClient = 'docker exec -i swaptest4 bash -c "secretcli';
     const pollingInterval = 1000;
     const multisigThreshold = 2;
     const broadcastInterval = 7000;
@@ -54,9 +54,9 @@ describe('EngSwap', () => {
         confirmations: 2,
         operatorAccounts: ['t2', 't3'],
         leaderAccount: 'smt1',
-        chainClient: 'docker exec -i swaptest4 bash -c "enigmacli',
+        chainClient: 'docker exec -i swaptest4 bash -c "secretcli',
         password: '',
-        recipient: 'enigma1um27s6ee62r8evnv7mz85fe4mz7yx6rkvzut0e'
+        recipient: 'secret1an0d4scr5zrwyjywpdxlq80uvr7jnu2emp3n65'
     };
 
     const tokenAmountToBurn = web3.utils.toBN(10);
@@ -77,7 +77,7 @@ describe('EngSwap', () => {
         await db.clear(SIGNATURE_COLLECTION);
 
         // eslint-disable-next-line max-len
-        // await executeCommand(`${chainClient} tx send enigma1srk8yx8y0q3u4jamdzvz2qenpehay66j3dj0tg enigma1n4pc2w3us9n4axa0ppadd3kv3c0sar8c4ju6k7 10000000uscrt --keyring-backend test --yes"`);
+        // await executeCommand(`${chainClient} tx send secret1an0d4scr5zrwyjywpdxlq80uvr7jnu2emp3n65 secret1an0d4scr5zrwyjywpdxlq80uvr7jnu2emp3n65 10000000uscrt --keyring-backend test --yes"`);
 
         // ****** Initialize leader + operators  ******
         const fromBlock = await web3.eth.getBlockNumber();
