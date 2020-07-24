@@ -120,6 +120,20 @@ class Leader {
         logger.info('Watching for signed swaps');
         this.broadcasting = true;
         do {
+            // check for failed swaps before each run
+            const failedTxs = await this.db.findAllByStatus(SWAP_STATUS_FAILED);
+            for (const failedSwap of failedTxs) {
+                try {
+                    if (await this.tokenSwapClient.isSwapDone(failedSwap.transactionHash)) {
+                        await this.updateConfirmedTransaction(failedSwap.transactionHash, failedSwap.mintTransactionHash);
+                    } else {
+                        await this.retrySubmittedSwap(swap.transactionHash);
+                    }
+                } catch(e) {
+                    throw new Error(`Failed to check swap status of failed transactionHash: ${failedSwap.transactionHash}, error: ${e}`);
+                }
+            }            
+
             const maxTxs = 1; // Avoid moving to the next tx in case of failure
             const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold, maxTxs);
             logger.info(`Found ${signedSwaps.length} swaps`);
@@ -156,7 +170,7 @@ class Leader {
             // wait 1 block for txs to be verified
             await sleep(this.broadcastInterval);
 
-            const submittedTxs = await this.db.findAllByStatuses([SWAP_STATUS_SUBMITTED, SWAP_STATUS_FAILED]);
+            const submittedTxs = await this.db.findAllByStatus(SWAP_STATUS_SUBMITTED);
             await Promise.all(
                 submittedTxs.map(async (swap) => {
                     try {

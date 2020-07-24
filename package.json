@@ -29,7 +29,7 @@
     "truffle": "^5.1.11"
   },
   "scripts": {
-    "test": "yarn migrate && mocha --exit ./test/swap.test.*.js",
+    "test": "yarn migrate && mocha --exit --timeout=10000 ./test/swap.test.*.js",
     "migrate": "npx truffle migrate --network develop --reset",
     "migrate:rinkeby": "npx truffle migrate --network rinkeby",
     "migrate:ropsten": "npx truffle migrate --network ropsten"

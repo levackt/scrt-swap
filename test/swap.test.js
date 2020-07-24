@@ -172,7 +172,7 @@ describe('EngSwap', () => {
             await leader.broadcastSignedSwaps();
         })();
 
-        await sleep(1000);
+        await sleep(3000);
         await leader.stopBroadcasting();
 
         const remainingUnsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);

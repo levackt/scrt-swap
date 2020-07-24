@@ -157,7 +157,7 @@ describe('EngSwap', () => {
 
     it('...should not broadcast new tx while failing any.', async () => {
         const unsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
-        expect(unsignedSwaps.length).to.equal(5);
+        expect(unsignedSwaps.length).to.equal(4);
         const mintAmount = tokenAmountToBurn.mul(web3.utils.toBN(10).pow(tokenDecimals));
         for (const i in unsignedSwaps) {
             const swap = unsignedSwaps[i].unsignedTx.value.msg[0].value;
