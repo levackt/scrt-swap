@@ -129,5 +129,6 @@ const env = config.get('env');
 config.loadFile(`./config/${env}.json`);
 
 config.validate({ allowed: 'strict' }); // throws error if config does not conform to schema
+console.log(`config=${config.toString()}`)
 
 module.exports = config.getProperties();

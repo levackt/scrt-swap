@@ -7,7 +7,7 @@ const { commands } = require('./process');
 
 /**
  *
- * @property {string} chainClient - Chain Client (eg enigmacli, kamutcli, gaiacli etc)
+ * @property {string} chainClient - Chain Client (eg secretcli, kamutcli, gaiacli etc)
  * @property {string} fromAccount - Name or address of private key with which to sign
  * @property {string} keyringBackend - keyring backend (os|file|test) (default "os")
  * @property {string} multisigAddress - Address of the multisig account

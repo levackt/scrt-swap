@@ -34,7 +34,7 @@ class Leader {
      * when all M-of-N operators have signed
      *
      * Prerequisite: A multisig key must be generated offline generated offline:
-     * `enigmacli keys add --multisig=name1,name2,name3[...] --multisig-threshold=K new_key_name`
+     * `secretcli keys add --multisig=name1,name2,name3[...] --multisig-threshold=K new_key_name`
      *
      * @param {string} multisig - The multisig address
      * @param {CliSwapClient} tokenSwapClient - Implements token swap operations.
@@ -77,7 +77,7 @@ class Leader {
     }
 
     async retrySubmittedSwap (transactionHash) {
-        logger.info(`Retrying transactionHash=${transactionHash}`);
+        logger.info(`Updating Retryable transactionHash=${transactionHash}`);
                 await this.db.updateSwapStatus(transactionHash, '', SWAP_STATUS_UNSIGNED).catch(
             error => logger.error(`Failed to update value in database: ${error}`)
         );
@@ -91,11 +91,11 @@ class Leader {
 
     async statusCheck(swap, result, attempts = 1) {
         const self = this;
-        var done = false;
+        var txDone = false;
         setTimeout(async function() {
             try{
-                done = await self.tokenSwapClient.isSwapDone(swap.transactionHash)
-                if (done) {
+                txDone = await self.tokenSwapClient.isSwapDone(swap.transactionHash)
+                if (txDone) {
                     logger.info(`Completing txHash=${result.txhash}`);
                     self.updateConfirmedTransaction(swap.transactionHash, result.txhash);
                 } else {
@@ -106,9 +106,11 @@ class Leader {
             }
             
             attempts++;
-            if (attempts < 10 && !done) {
+            if (attempts < 10 && !txDone && this.broadcasting) {
                 logger.info(`statusCheck attempt ${attempts}`);
                 self.statusCheck(swap, result, attempts);
+            } else {
+                throw new Error(`Failed to confirm swap with txHash=${result.txhash}`)
             }
         }, 1000)
     }
@@ -118,17 +120,32 @@ class Leader {
         logger.info('Watching for signed swaps');
         this.broadcasting = true;
         do {
-            const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold);
+            // check for failed swaps before each run
+            const failedTxs = await this.db.findAllByStatus(SWAP_STATUS_FAILED);
+            for (const failedSwap of failedTxs) {
+                try {
+                    if (await this.tokenSwapClient.isSwapDone(failedSwap.transactionHash)) {
+                        await this.updateConfirmedTransaction(failedSwap.transactionHash, failedSwap.mintTransactionHash);
+                    } else {
+                        await this.retrySubmittedSwap(swap.transactionHash);
+                    }
+                } catch(e) {
+                    throw new Error(`Failed to check swap status of failed transactionHash: ${failedSwap.transactionHash}, error: ${e}`);
+                }
+            }            
+
+            const maxTxs = 1; // Avoid moving to the next tx in case of failure
+            const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold, maxTxs);
             logger.info(`Found ${signedSwaps.length} swaps`);
 
             // eslint-disable-next-line no-restricted-syntax
             for (const swap of signedSwaps) {
                 try {
+                    console.log(`Broadcasting txHash=${swap.transactionHash}`);
                     const result = JSON.parse(
                         await this.tokenSwapClient.broadcastTokenSwap(swap.signatures, swap.unsignedTx, swap.sequence, swap.accountNumber).catch(
                             async (error) => {
-                                logger.error(`Failed to append signatures, or broadcast transaction: ${error}`);
-                                await this.updateFailedSwap(swap.transactionHash);
+                                throw new Error(`Failed to append signatures, or broadcast transaction: ${error}`);
                             }
                         )
                     );
@@ -136,11 +153,15 @@ class Leader {
                         await this.db.updateSwapStatus(swap.transactionHash, result.txhash, SWAP_STATUS_SUBMITTED);
                         await this.statusCheck(swap, result);
                     } else {
-                        logger.error(`Txhash not found in returned result: ${result}`);
-                        await this.updateFailedSwap(swap.transactionHash);
+                        throw new Error(`Txhash not found in returned result: ${result}`);
                     }
                 } catch (err) {
-                    logger.error(`Unknown error: ${err} - on swap ${swap}`);
+                    logger.error(`Error: ${err} - on swap ${JSON.stringify(swap)}`);
+                    this.broadcasting = false;
+                    await this.retrySubmittedSwap(swap.transactionHash);
+                    this.stop();
+                    await sleep(60000);
+                    break;
                 }
             }
 
@@ -160,7 +181,6 @@ class Leader {
                         }
                     } catch(e) {
                         logger.error(`Failed to check swap status of transactionHash: ${swap.transactionHash}, error: ${e}`);
-                        await this.updateFailedSwap(swap.transactionHash);
                     }
                 })
             );
