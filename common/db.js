@@ -47,7 +47,7 @@ class Db {
             }
             return unsignedSwap.status === SWAP_STATUS_UNSIGNED;
         } catch (e) {
-            logger.error(`Error validating inserted swap. Error: ${e}. Details: ${unsignedSwap}`);
+            logger.error(`Error validating inserted swap. Error: ${e}. Details: ${JSON.stringify(unsignedSwap)}`);
             return false;
         }
     }
@@ -60,6 +60,11 @@ class Db {
     async insertUnsignedSwap (unsignedSwap) {
         if (!this.validateSwap(unsignedSwap)) {
             throw new Error('Invalid unsigned swap');
+        }
+        // check if account already inserted this sequence number
+        const exists = await this.findBySequence(unsignedSwap.accountNumber, unsignedSwap.sequence);
+        if (exists) {
+            throw new Error(`Sequence exists. Details: ${JSON.stringify(unsignedSwap)}`);
         }
         const record = {
             ...unsignedSwap,
@@ -119,6 +124,18 @@ class Db {
     }
 
     /**
+     * Finds swap matching account and sequence.
+     * @param {*} accountNumber account number of the multisig.
+     * @param {*} sequence new sequence number.
+     */
+    async findBySequence (accountNumber, sequence) {
+        const query = { 
+            accountNumber: accountNumber, sequence: sequence 
+        };
+        return await this.db.collection(SWAP_COLLECTION).findOne(query);
+    }
+
+    /**
      * Find all by status.
      *
      * @returns {Promise<Array<Swap>>}
@@ -133,6 +150,7 @@ class Db {
         }
         return swaps;
     }
+
     async findAllByStatuses (statuses) {
         const query = { status: { $in: statuses } };        
         const result = await this.db.collection(SWAP_COLLECTION).find(query);

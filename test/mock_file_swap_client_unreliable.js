@@ -20,14 +20,14 @@ class MockTokenSwapClientUnreliable {
         if (this.fail) {
             throw new Error("mock fail")
         }
-        return qAccount.sequence;
+        return qAccount.value.sequence;
     }
 
     async getAccountNumber () {
         if (this.fail) {
             throw new Error("mock fail")
         }
-        return qAccount;
+        return qAccount.value.accountNumber;
     }
 
     async isSwapDone (ethTxHash) {

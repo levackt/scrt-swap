@@ -132,7 +132,13 @@ class Leader {
                 } catch(e) {
                     throw new Error(`Failed to check swap status of failed transactionHash: ${failedSwap.transactionHash}, error: ${e}`);
                 }
-            }            
+            }
+            //if we still have swaps in progress, sleep and try again later
+            const inProgressTxs = await this.db.findAllByStatuses([SWAP_STATUS_FAILED, SWAP_STATUS_SUBMITTED]);
+            if (inProgressTxs) {
+                await sleep(60000);
+                continue;
+            }
 
             const maxTxs = 1; // Avoid moving to the next tx in case of failure
             const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold, maxTxs);
@@ -196,7 +202,6 @@ class Leader {
         this.done = false;
         let sequenceNumber = parseInt(await this.getSequence(), 10);
         const accountNumber = parseInt(await this.getAccountNumber(), 10);
-        // let accountNumber = await this.getAccountNumber();
         // eslint-disable-next-line no-restricted-syntax
         for await (const logBurn of this.burnWatcher.watchBurnLog()) {
             try {
