@@ -133,41 +133,39 @@ class Leader {
                     throw new Error(`Failed to check swap status of failed transactionHash: ${failedSwap.transactionHash}, error: ${e}`);
                 }
             }
-            //if we still have swaps in progress, sleep and try again later
+            
+            //only broadcast once there are none in progress
             const inProgressTxs = await this.db.findAllByStatuses([SWAP_STATUS_FAILED, SWAP_STATUS_SUBMITTED]);
-            if (inProgressTxs) {
-                await sleep(60000);
-                continue;
-            }
+            if (!inProgressTxs) {
+                const maxTxs = 1; // Avoid moving to the next tx in case of failure
+                const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold, maxTxs);
+                logger.info(`Found ${signedSwaps.length} swaps`);
 
-            const maxTxs = 1; // Avoid moving to the next tx in case of failure
-            const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold, maxTxs);
-            logger.info(`Found ${signedSwaps.length} swaps`);
-
-            // eslint-disable-next-line no-restricted-syntax
-            for (const swap of signedSwaps) {
-                try {
-                    console.log(`Broadcasting txHash=${swap.transactionHash}`);
-                    const result = JSON.parse(
-                        await this.tokenSwapClient.broadcastTokenSwap(swap.signatures, swap.unsignedTx, swap.sequence, swap.accountNumber).catch(
-                            async (error) => {
-                                throw new Error(`Failed to append signatures, or broadcast transaction: ${error}`);
-                            }
-                        )
-                    );
-                    if (result.txhash) {
-                        await this.db.updateSwapStatus(swap.transactionHash, result.txhash, SWAP_STATUS_SUBMITTED);
-                        await this.statusCheck(swap, result);
-                    } else {
-                        throw new Error(`Txhash not found in returned result: ${result}`);
+                // eslint-disable-next-line no-restricted-syntax
+                for (const swap of signedSwaps) {
+                    try {
+                        console.log(`Broadcasting txHash=${swap.transactionHash}`);
+                        const result = JSON.parse(
+                            await this.tokenSwapClient.broadcastTokenSwap(swap.signatures, swap.unsignedTx, swap.sequence, swap.accountNumber).catch(
+                                async (error) => {
+                                    throw new Error(`Failed to append signatures, or broadcast transaction: ${error}`);
+                                }
+                            )
+                        );
+                        if (result.txhash) {
+                            await this.db.updateSwapStatus(swap.transactionHash, result.txhash, SWAP_STATUS_SUBMITTED);
+                            await this.statusCheck(swap, result);
+                        } else {
+                            throw new Error(`Txhash not found in returned result: ${result}`);
+                        }
+                    } catch (err) {
+                        logger.error(`Error: ${err} - on swap ${JSON.stringify(swap)}`);
+                        this.broadcasting = false;
+                        await this.retrySubmittedSwap(swap.transactionHash);
+                        this.stop();
+                        await sleep(60000);
+                        break;
                     }
-                } catch (err) {
-                    logger.error(`Error: ${err} - on swap ${JSON.stringify(swap)}`);
-                    this.broadcasting = false;
-                    await this.retrySubmittedSwap(swap.transactionHash);
-                    this.stop();
-                    await sleep(60000);
-                    break;
                 }
             }
 
