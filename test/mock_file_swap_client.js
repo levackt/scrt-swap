@@ -8,11 +8,11 @@ const logger = require('../common/logger');
 class MockTokenSwapClient {
 
     async sequenceNumber () {
-        return qAccount.sequence;
+        return qAccount.value.sequence;
     }
 
     async getAccountNumber () {
-        return qAccount;
+        return qAccount.value.accountNumber;
     }
 
     async isSwapDone (ethTxHash) {
