@@ -12,7 +12,7 @@ class MockTokenSwapClient {
     }
 
     async getAccountNumber () {
-        return qAccount.value.accountNumber;
+        return qAccount.value.account_number;
     }
 
     async isSwapDone (ethTxHash) {

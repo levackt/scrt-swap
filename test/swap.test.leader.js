@@ -155,6 +155,14 @@ describe('EngSwap', () => {
         expect(unsignedSwaps.length).to.equal(nbSwaps);
     });
 
+    it('...Next sequence should be based on DB, not blockchain.', async () => {
+        const sequenceNumber = await leader.getSequence();
+        expect(sequenceNumber).to.equal(nbSwaps);  // Sequence is zero indexed
+
+        const blockchainSequence = await leaderClient.sequenceNumber();
+        expect(blockchainSequence).to.equal('0');  // static but mocks nothing broadcast yet
+    });
+
     it('...should not broadcast new tx while failing any.', async () => {
         const unsignedSwaps = await db.findAboveThresholdUnsignedSwaps(2);
         expect(unsignedSwaps.length).to.equal(4);

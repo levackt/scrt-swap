@@ -59,7 +59,15 @@ class Leader {
     }
 
     async getSequence () {
-        return this.tokenSwapClient.sequenceNumber();
+        // first check mongodb and increment the last sequence
+        // if no sequence ever, ie new account, then only get sequence from blockchain
+        const accountNumber = await this.getAccountNumber();
+        const dbSequence = await this.db.getNextSequenceNumber(accountNumber);
+        if (dbSequence > 0) {
+            return dbSequence;
+        } else {
+            return this.tokenSwapClient.sequenceNumber();
+        }
     }
 
     async getAccountNumber () {
