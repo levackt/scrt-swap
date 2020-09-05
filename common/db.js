@@ -136,6 +136,21 @@ class Db {
     }
 
     /**
+     * Returns the next sequence number for the multisig account.
+     * @param accountNumber Multisig's account number
+     */
+    async getNextSequenceNumber (accountNumber) {        
+        const query = { accountNumber: parseInt(accountNumber) };
+        const result = await this.db.collection(SWAP_COLLECTION).find(query).limit(1).sort({sequence: -1});
+        const swaps = await result.toArray();
+        if (swaps.length === 1) {
+            return swaps[0].sequence + 1;
+        } else {
+            return 0;
+        }
+    }
+
+    /**
      * Find all by status.
      *
      * @returns {Promise<Array<Swap>>}

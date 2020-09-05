@@ -27,7 +27,7 @@ class MockTokenSwapClientUnreliable {
         if (this.fail) {
             throw new Error("mock fail")
         }
-        return qAccount.value.accountNumber;
+        return qAccount.value.account_number;
     }
 
     async isSwapDone (ethTxHash) {
