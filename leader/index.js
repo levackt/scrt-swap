@@ -144,7 +144,7 @@ class Leader {
             
             //only broadcast once there are none in progress
             const inProgressTxs = await this.db.findAllByStatuses([SWAP_STATUS_FAILED, SWAP_STATUS_SUBMITTED]);
-            if (!inProgressTxs) {
+            if (inProgressTxs.length === 0) {
                 const maxTxs = 1; // Avoid moving to the next tx in case of failure
                 const signedSwaps = await this.db.findAboveThresholdUnsignedSwaps(this.multisigThreshold, maxTxs);
                 logger.info(`Found ${signedSwaps.length} swaps`);
