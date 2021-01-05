@@ -1,4 +1,6 @@
-# With the passing of Proposal 27, the $ENG to $SCRT swap is CLOSED. $SCRT can now only be created via network inflation. Over 114M $ENG tokens were burned over the past ~6 months in over 3,000 individual swaps to nearly 2,000 addresses.
+# With the passing of Proposal 27, the $ENG to $SCRT swap is CLOSED. 
+## $SCRT can now only be created via network inflation. 
+## Over 114M $ENG tokens were burned over the past ~6 months in over 3,000 individual swaps to nearly 2,000 addresses.
 
 
 # ENG to SCRT Unidirectional Swap Tooling
